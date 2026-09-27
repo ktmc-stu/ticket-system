@@ -310,7 +310,7 @@ function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.ch
  <div class="rcol" style="right:40px;top:40px;width:300px">
   <div class="cls ${S.cls=='一等座'?'sel':''}" onclick="S.cls='一等座';s2b()">一等座 <small>(HK$ ${fareFor(S.main,'一等座',false).toFixed(2)})</small></div>
   <div class="cls ${S.cls=='二等座'?'sel':''}" onclick="S.cls='二等座';s2b()">二等座 <small>(HK$ ${fareFor(S.main,'二等座',false).toFixed(2)})</small></div>
-  ${biz?`<div class="cls ${S.cls=='商務座'?'sel':''}" onclick="S.cls='商務座';s2b()">商務座 <small>(HK$ ${fareFor(S.main,'商務座',false).toFixed(2)})</small></div>`:''}
+  <div class="cls ${S.cls=='商務座'?'sel':''}" onclick="S.cls='商務座';s2b()">商務座 <small>(HK$ ${fareFor(S.main,'商務座',false).toFixed(2)})</small></div>
   <p style="text-align:right;margin:24px 0 10px;font-size:20px">車票總數：${S.adult+S.child}張</p>
   <button class="btn" style="width:100%" onclick="startReg()">下一步</button>
  </div>`);}
