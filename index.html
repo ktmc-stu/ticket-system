@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>香港西九龍站售票機</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box;user-select:none;font-family:"Microsoft JhengHei",sans-serif;margin:0}
 html,body{height:100%;overflow:hidden;background:#e8edf3}
@@ -63,6 +62,8 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .idb img{display:block;margin:0 auto 10px}
 .suml{border:2px solid #8FB2DE;border-radius:6px;padding:16px;background:#fff;font-size:20px}
 .pbox{border:2px solid #8FB2DE;border-radius:6px;padding:10px 18px;background:#fff;font-size:20px;margin:10px 0;text-align:right}
+.docx{width:72mm;margin:0 auto;font-size:12px;line-height:1.5}
+.docx p{margin:2px 0}
 #printArea{display:none;line-height:0}
 #printArea img{display:block;margin:0 auto}
 @media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}@page{size:80mm 210mm;margin:0}}
@@ -74,9 +75,9 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
  <div id="app"></div>
  <div class="bar"></div>
 </div></div>
+<iframe id="pdfFrame" style="position:fixed;left:-10000px;top:0;width:794px;height:1122px;border:0" src="about:blank"></iframe>
 <div id="printArea"></div>
 <script>
-if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);document.getElementById('stage').style.transform='scale('+s+')';}
 window.onresize=fit;fit();
 document.addEventListener('error',function(e){if(e.target&&e.target.tagName=='IMG'&&e.target.closest('#app'))e.target.style.display='none';},true);
@@ -181,30 +182,17 @@ const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
 const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
 function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
-/* ===== PDF 原排版列印：先解碼圖片再列印（修復空白） ===== */
-async function pdfPrint(path){
- if(typeof pdfjsLib==='undefined')throw new Error('pdfjs missing');
- const buf=await (await fetch(path)).arrayBuffer();
- const doc=await pdfjsLib.getDocument({data:buf}).promise;
- const pa=document.getElementById('printArea');pa.innerHTML='';
- for(let i=1;i<=doc.numPages;i++){
-  const page=await doc.getPage(i);
-  const vp1=page.getViewport({scale:1});
-  const mmW=(vp1.width*25.4/72).toFixed(2),mmH=(vp1.height*25.4/72).toFixed(2);
-  const vp=page.getViewport({scale:300/72});
-  const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
-  await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-  const img=new Image();
-  img.src=cv.toDataURL('image/png');
-  img.style.cssText='display:block;margin:0 auto;width:'+mmW+'mm;height:'+mmH+'mm';
-  await new Promise(res=>{if(img.complete&&img.naturalWidth)return res();img.onload=res;img.onerror=res;});
-  pa.appendChild(img);
- }
- window.print();}
-const SLIP_FIXED=`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.5"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車　　次：G5818<br>出發站：香港西九龍　11:24<br>到達站：福田　11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總　　額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
-const RECEIPT_FIXED=`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.6"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
-async function slipPrintRaw(){try{await pdfPrint('ticket_slip.pdf');}catch(e){doPrint(SLIP_FIXED);}}
-async function receiptPrint(){try{await pdfPrint('receipt.pdf');}catch(e){doPrint(RECEIPT_FIXED);}}
+/* ===== 向量直印：隱藏 iframe 載入 PDF，由 Edge PDF 閱讀器以向量/文字送印 ===== */
+function printPdf(url){return new Promise(function(res,rej){
+ const f=document.getElementById('pdfFrame');let done=false;
+ const to=setTimeout(function(){if(!done){done=true;rej(new Error('timeout'));}},9000);
+ f.onload=function(){if(done)return;setTimeout(function(){if(done)return;done=true;clearTimeout(to);
+   try{f.contentWindow.focus();f.contentWindow.print();res();}catch(e){rej(e);}},600);};
+ f.src=url+'?v='+Date.now();});}
+const SLIP_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車　　次：G5818<br>出發站：香港西九龍　11:24<br>到達站：福田　11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總　　額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
+const RECEIPT_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
+async function slipPrintRaw(){try{await printPdf('ticket_slip.pdf');}catch(e){doPrint(SLIP_FIXED);}}
+async function receiptPrint(){try{await printPdf('receipt.pdf');}catch(e){doPrint(RECEIPT_FIXED);}}
 const printModalHTML=(N,cur,rem)=>`<div class="modal"><div class="mbox" style="min-width:640px">
  <p style="font-size:24px;margin:14px 0">共列印${N}張行程信息提示</p>
  <p style="font-size:24px;margin:14px 0">正在為您列印第 <b style="font-size:38px;color:#f08c1e">${cur}</b> 張</p>
@@ -253,7 +241,6 @@ function pickSt(s){
 function pickDate(){S.step='date';setBar(bb('back'));
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px"><p style="margin:20px;font-size:22px">選擇15天內出發的日子：</p>
  <div class="sgrid" style="padding-top:10px">${day15().map(d=>`<div class="st ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';s1()">${fmt(d).slice(5).replace('-','/')}</div>`).join('')}</div></div>`);}
-/* ===== 步驟二：車次分頁（每頁5班）＋日期分頁 獨立控制 ===== */
 function s2(){S.step=2;
  if(S.cw==null||S.cw===undefined){const i=dayIdx(S.date);S.cw=Math.min(11,Math.max(0,Math.floor(i/4)*4));}
  if(S.cw<0)S.cw=0;if(S.cw>11)S.cw=11;
