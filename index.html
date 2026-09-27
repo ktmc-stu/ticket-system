@@ -81,6 +81,15 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);document.getElementById('stage').style.transform='scale('+s+')';}
 window.onresize=fit;fit();
 document.addEventListener('error',function(e){if(e.target&&e.target.tagName=='IMG'&&e.target.closest('#app'))e.target.style.display='none';},true);
+
+/* ===== 證件圖標自動匹配 ===== */
+function getIdIcon(t){
+ if(t.includes('港澳')&&t.includes('通行證'))return 'img/id-erp.png';
+ if(t.includes('台灣'))return 'img/id-mtp.png';
+ if(t.includes('護照'))return 'img/id-passport.png';
+ return 'img/id-card.png';
+}
+
 const SP1=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上饒","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
 const SP2=[["武漢","Wuhan"],["長沙南","Changshanan"],["成都東","Chengdudong"],["重慶西","Chongqingxi"],["福州","Fuzhou"],["昆明南","Kunmingnan"],["梅州西","Meizhouxi"],["南寧東","Nanningdong"],["廈門","Xiamen"],["西安北","Xi'anbei"],["湛江西","Zhanjiangxi"],["張家界西","Zhangjiajiexi"],["肇慶東","Zhaoqingdong"],["杭州西","Hangzhouxi"],["南京南","Nanjingnan"],["潮汕","Chaoshan"],["東莞南","Dongguannan"],["廣州新塘","Guangzhouxintang"],["南沙北","Nanshabei"],["清遠","Qingyuan"]];
 const ST=SP1.concat(SP2);
@@ -182,7 +191,6 @@ const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
 const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
 function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
-/* ===== Chrome Kiosk 向量靜默列印（動態 iframe，不空白） ===== */
 function printPdf(url) {
   return new Promise(function(resolve, reject) {
     const iframe = document.createElement('iframe');
@@ -209,7 +217,7 @@ function printPdf(url) {
     setTimeout(function(){ if (!done) { cleanup(); reject(new Error('Timeout')); } }, 10000);
     iframe.src = url + '?t=' + Date.now();
   });}
-const SLIP_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車　　次：G5818<br>出發站：香港西九龍　11:24<br>到達站：福田　11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總　　額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
+const SLIP_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車  次：G5818<br>出發站：香港西九龍 11:24<br>到達站：福田 11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總  額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
 const RECEIPT_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
 async function slipPrintRaw(){try{await printPdf('ticket_slip.pdf');}catch(e){doPrint(SLIP_FIXED);}}
 async function receiptPrint(){try{await printPdf('receipt.pdf');}catch(e){doPrint(RECEIPT_FIXED);}}
@@ -322,7 +330,7 @@ function sumBase(){const t=S.trains[S.sel],T=totals();
    <div style="text-align:right;margin-top:20px"><button class="btn" onclick="sum('pay')">付款</button></div></div>`;}
 function sum(modal){setBar(bb('cancel'));let m='';
  if(modal=='id')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">請選擇證件</p>
-  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';sum('scan')"><img class="ic" src="img/id-card.png">${t}</button>`).join('')}</div>
+  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';sum('scan')"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div>
   <div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
  if(modal=='scan')m=`<div class="modal"><div class="mbox"><p style="font-size:24px;margin-bottom:24px">請於相關閱讀器掃瞄證件/刷卡</p><div style="text-align:center"><button class="btn" onclick="sum(null)">取消交易</button></div></div></div>`;
  if(modal=='pay')m=`<div class="modal"><div class="mbox"><div class="idg">
@@ -332,7 +340,7 @@ function sum(modal){setBar(bb('cancel'));let m='';
   <div style="text-align:center"><button class="btn" onclick="sum(null)">取消交易</button></div></div></div>`;
  if(modal=='card')m=`<div class="modal"><div class="mbox"><p style="font-size:24px">如使用感應式信用卡，請放在指定讀卡器（模擬）</p></div></div>`;
  if(modal=='child')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">登記免費乘車小童：請選擇證件</p>
-  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';sum('childscan')"><img class="ic" src="img/id-card.png">${t}</button>`).join('')}</div>
+  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';sum('childscan')"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div>
   <div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
  if(modal=='childscan')m=`<div class="modal"><div class="mbox"><p style="font-size:24px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`;
  go(sumBase()+
@@ -363,7 +371,7 @@ function recollect(){setBar(bb('back'));S.pick=S.pick||{};const a=getO().slice()
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px">
  <p style="margin:10px;font-size:22px">請選擇要領取的訂單（可多選；開車前可重複領取，每單只限印發兩次；不會列印收據）</p>
  ${a.map(o=>{const ok=o.slipPrints<2&&new Date(o.dep_dt)>new Date();const on=!!S.pick[o.id];
-  return `<button class="btn" style="display:block;width:100%;margin:10px 0;${on?'background:#f08c1e':''}" ${ok?'':'disabled'} onclick="togPick(${o.id})">${on?'✔ ':''}${o.no}　${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`;}).join('')||'<p style="margin:14px">沒有訂單</p>'}
+  return `<button class="btn" style="display:block;width:100%;margin:10px 0;${on?'background:#f08c1e':''}" ${ok?'':'disabled'} onclick="togPick(${o.id})">${on?'✔ ':''}${o.no} ${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`;}).join('')||'<p style="margin:14px">沒有訂單</p>'}
  ${ids.length?`<button class="btn orange" style="margin-top:16px" onclick="startQueue()">確認列印（${ids.length}張）</button>`:''}
  </div>`);}
 function togPick(id){S.pick[id]=!S.pick[id];recollect();}
@@ -379,12 +387,12 @@ function childFlow(){const os=getO().slice().reverse().slice(0,8);setBar(bb('bac
   ${os.map(o=>`<button class="btn" style="display:block;width:100%;margin:10px 0" onclick="S.cfOrder=${o.id};S.paxType=null;S.cfScan1=0;S.cfScan2=0;S.kidType=null;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}</div>`);return;}
  if(!S.cfScan1){
   if(!S.paxType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">選擇同行成人購票時的證件類別</p>
-   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';childFlow()"><img class="ic" src="img/id-card.png">${t}</button>`).join('')}</div></div></div>`);return;}
+   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';childFlow()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);return;}
   setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:24px">請於相關閱讀器掃瞄證件/刷卡（模擬）</p></div></div>`);
   setTimeout(function(){S.cfScan1=1;S.paxType=null;childFlow();},2500);return;}
  if(!S.cfScan2){
   if(!S.kidType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">步驟二：登記同行小童證件</p>
-   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';childFlow()"><img class="ic" src="img/id-card.png">${t}</button>`).join('')}</div></div></div>`);return;}
+   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';childFlow()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);return;}
   setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:24px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`);
   setTimeout(function(){const o=getO().find(x=>x.id===S.cfOrder);
    if(o.free_children.length>=o.qty){S.kidType=null;notice('每位18歲或以上的旅客只可登記一位免費乘車小童');return;}
