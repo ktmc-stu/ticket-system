@@ -75,12 +75,21 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
  <div id="app"></div>
  <div class="bar"></div>
 </div></div>
-<iframe id="pdfFrame" style="position:fixed;left:-10000px;top:0;width:794px;height:1122px;border:0" src="about:blank"></iframe>
+<iframe id="fSlip" style="position:fixed;left:-10000px;top:0;width:794px;height:1122px;border:0" src="about:blank"></iframe>
+<iframe id="fRec" style="position:fixed;left:-10001px;top:0;width:794px;height:1122px;border:0" src="about:blank"></iframe>
 <div id="printArea"></div>
 <script>
 function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);document.getElementById('stage').style.transform='scale('+s+')';}
 window.onresize=fit;fit();
 document.addEventListener('error',function(e){if(e.target&&e.target.tagName=='IMG'&&e.target.closest('#app'))e.target.style.display='none';},true);
+/* ===== 預載兩個列印 iframe（開機即載入 PDF，列印零延遲） ===== */
+const FS=document.getElementById('fSlip'),FR=document.getElementById('fRec');
+function whenLoaded(f,ms){return new Promise(function(res,rej){
+ if(f.dataset.ready=='1'){res();return;}
+ var t=setTimeout(function(){rej(new Error('timeout'));},ms||9000);
+ f.addEventListener('load',function(){clearTimeout(t);f.dataset.ready='1';setTimeout(res,600);},{once:true});});}
+function printFrame(f){f.contentWindow.focus();f.contentWindow.print();}
+FS.src='ticket_slip.pdf';FR.src='receipt.pdf';
 const SP1=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上饒","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
 const SP2=[["武漢","Wuhan"],["長沙南","Changshanan"],["成都東","Chengdudong"],["重慶西","Chongqingxi"],["福州","Fuzhou"],["昆明南","Kunmingnan"],["梅州西","Meizhouxi"],["南寧東","Nanningdong"],["廈門","Xiamen"],["西安北","Xi'anbei"],["湛江西","Zhanjiangxi"],["張家界西","Zhangjiajiexi"],["肇慶東","Zhaoqingdong"],["杭州西","Hangzhouxi"],["南京南","Nanjingnan"],["潮汕","Chaoshan"],["東莞南","Dongguannan"],["廣州新塘","Guangzhouxintang"],["南沙北","Nanshabei"],["清遠","Qingyuan"]];
 const ST=SP1.concat(SP2);
@@ -182,21 +191,17 @@ const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
 const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
 function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
-/* ===== 向量直印：隱藏 iframe 載入 PDF，由 Edge PDF 閱讀器以向量/文字送印 ===== */
-function printPdf(url){return new Promise(function(res,rej){
- const f=document.getElementById('pdfFrame');let done=false;
- const to=setTimeout(function(){if(!done){done=true;rej(new Error('timeout'));}},9000);
- f.onload=function(){if(done)return;setTimeout(function(){if(done)return;done=true;clearTimeout(to);
-   try{f.contentWindow.focus();f.contentWindow.print();res();}catch(e){rej(e);}},600);};
- f.src=url+'?v='+Date.now();});}
 const SLIP_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車　　次：G5818<br>出發站：香港西九龍　11:24<br>到達站：福田　11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總　　額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
 const RECEIPT_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
-async function slipPrintRaw(){try{await printPdf('ticket_slip.pdf');}catch(e){doPrint(SLIP_FIXED);}}
-async function receiptPrint(){try{await printPdf('receipt.pdf');}catch(e){doPrint(RECEIPT_FIXED);}}
+async function slipPrintRaw(){try{await whenLoaded(FS);printFrame(FS);}catch(e){doPrint(SLIP_FIXED);}}
+async function receiptPrint(){try{await whenLoaded(FR);printFrame(FR);}catch(e){doPrint(RECEIPT_FIXED);}}
 const printModalHTML=(N,cur,rem)=>`<div class="modal"><div class="mbox" style="min-width:640px">
  <p style="font-size:24px;margin:14px 0">共列印${N}張行程信息提示</p>
  <p style="font-size:24px;margin:14px 0">正在為您列印第 <b style="font-size:38px;color:#f08c1e">${cur}</b> 張</p>
  <p style="font-size:24px;margin:14px 0">尚有 ${rem} 張未列印</p><div style="text-align:right"><img class="ic" src="img/printer.png"></div></div></div>`;
+const receiptModalHTML=()=>`<div class="modal"><div class="mbox" style="min-width:560px">
+ <p style="font-size:24px;margin:14px 0">正在為您列印收據…</p>
+ <p style="font-size:18px;color:#666">請取走收據（完成交易後不能再次列印）</p></div></div>`;
 function unsup(t){setBar(bb('back'));go(`
  <div class="panel" style="left:30px;top:40px;right:30px;height:780px;display:flex;flex-direction:column;align-items:center;justify-content:center">
   <p style="font-size:36px;color:#333">${t}</p>
@@ -330,9 +335,10 @@ async function printing(){const t=S.trains[S.sel],T=totals();
  setBar(bb('cancel'));
  go(sumBase()+printModalHTML(1,1,0));
  await slipPrintRaw();o.slipPrints=1;saveO(o);
- await wait(1500);
+ await wait(4000);
+ go(sumBase()+receiptModalHTML());
  await receiptPrint();o.receiptPrinted=true;saveO(o);
- await wait(2500);
+ await wait(3000);
  home();}
 function recollect(){setBar(bb('back'));S.pick=S.pick||{};const a=getO().slice().reverse().slice(0,8);
  const ids=Object.keys(S.pick).filter(k=>S.pick[k]);
@@ -347,7 +353,7 @@ async function startQueue(){const ids=Object.keys(S.pick).filter(k=>S.pick[k]).m
  for(let i=0;i<ids.length;i++){const o=getO().find(x=>x.id===ids[i]);if(!o)continue;
   go(printModalHTML(ids.length,i+1,ids.length-i-1));
   await slipPrintRaw();o.slipPrints++;saveO(o);
-  await wait(2600);}
+  await wait(4000);}
  recollect();}
 function childFlow(){const os=getO().slice().reverse().slice(0,8);setBar(bb('back'));
  if(!S.cf){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">無論於任何購票途徑購票時，如未有登記同行免費乘車小童，亦可於售票機後補登記手續</p><button class="btn" onclick="S.cf=1;childFlow()">添加</button></div>`);return;}
