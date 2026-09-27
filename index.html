@@ -7,9 +7,9 @@
 *{box-sizing:border-box;user-select:none;font-family:"Microsoft JhengHei",sans-serif;margin:0}
 body{background:#eef3f8;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 .bar{background:#3e75b8;height:44px;flex:none}
-.topbar{background:#3e75b8;padding:8px 12px;display:flex;justify-content:space-between;flex:none}
-.tb{background:#3d7ab8;color:#fff;border:2px solid #fff;border-radius:6px;padding:8px 18px;font-size:18px;cursor:pointer}
-.tb.home{display:flex;align-items:center;gap:6px;line-height:1.1}
+.topbar{background:#3e75b8;min-height:44px;flex:none;padding:6px 12px;display:flex;justify-content:space-between;align-items:center}
+.tb{background:#3d7ab8;color:#fff;border:2px solid #fff;border-radius:6px;padding:6px 18px;font-size:18px;cursor:pointer}
+.tb.home{line-height:1.1}
 #app{flex:1;overflow:auto;padding:16px;position:relative}
 .panel{background:#fff;border:3px solid #3e75b8;border-radius:8px;padding:14px;position:relative}
 .tab{position:absolute;top:-2px;left:40px;background:#3e75b8;color:#fff;padding:6px 60px 6px 24px;font-size:16px;border-radius:0 0 10px 0}
@@ -33,7 +33,6 @@ body{background:#eef3f8;display:flex;flex-direction:column;height:100vh;overflow
 .chip.sel{border-color:#f08c1e;background:#f08c1e;color:#fff}
 .qty{display:flex;align-items:center;gap:16px;font-size:20px;margin:18px 0}
 .circ{width:44px;height:44px;border-radius:50%;border:2px solid #3d7ab8;background:#fff;color:#3d7ab8;font-size:24px;cursor:pointer}
-.circ:disabled{opacity:.3}
 .nbox{border:2px solid #7aa7d4;border-radius:6px;padding:8px 26px;font-size:20px;background:#fff}
 .cls{background:#fff;border:2px solid #7aa7d4;border-radius:6px;padding:12px;margin:10px 0;cursor:pointer;font-size:18px;text-align:center}
 .cls small{font-size:11px;color:#666}
@@ -41,7 +40,6 @@ body{background:#eef3f8;display:flex;flex-direction:column;height:100vh;overflow
 .red{color:#e33;font-size:15px}
 .modal{position:fixed;inset:0;background:rgba(120,120,120,.55);display:flex;align-items:center;justify-content:center;z-index:50}
 .mbox{background:#fff;border-radius:8px;padding:24px;min-width:420px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
-.mbox.print{border:4px solid #e8b40b}
 .idg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
 .idb{background:#3d7ab8;color:#fff;border:none;border-radius:6px;padding:16px 8px;font-size:15px;cursor:pointer;line-height:1.4}
 .idb span{display:block;font-size:26px;margin-bottom:6px}
@@ -52,7 +50,7 @@ body{background:#eef3f8;display:flex;flex-direction:column;height:100vh;overflow
 .hb span{font-size:40px}
 .hb.tall{grid-row:1/3;grid-column:3}
 .lang{position:absolute;right:60px;bottom:20px}
-.pdpa{background:#fff;padding:26px 40px;font-size:14px;line-height:1.8;height:70vh;overflow:hidden;position:relative}
+.pdpa{background:#fff;padding:26px 40px;font-size:14px;line-height:1.8;height:62vh;overflow:hidden;position:relative}
 .pdpa h3{color:#f08c1e;text-align:center;font-size:18px;margin-bottom:12px}
 .side{position:absolute;right:-34px;top:30px;writing-mode:vertical-lr;background:#3d7ab8;color:#fff;padding:14px 8px;border-radius:6px;cursor:pointer}
 .pnum{position:absolute;right:8px;top:8px;font-size:13px;color:#666}
@@ -61,27 +59,30 @@ body{background:#eef3f8;display:flex;flex-direction:column;height:100vh;overflow
 </style>
 </head>
 <body>
-<div class="bar" id="hbar"></div>
+<div class="topbar" id="tbar"></div>
 <div id="app"></div>
 <div class="bar"></div>
 <div id="printArea"></div>
 <script>
 const ST=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上饒","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
 const IDS=["中國居民身份證","港澳居民居住證","外國人永久居留身份證","港澳居民來往內地通行證","台灣居民來往大陸通行證","按規定可使用的有效護照"];
-let S={},IDLE;const $=q=>document.querySelector(q);
+let S={},IDLE;
+const $=q=>document.querySelector(q);
 const go=h=>{$('#app').innerHTML=h;clearTimeout(IDLE);IDLE=setTimeout(home,120000);};
-const topbar=(l)=>`<div class="topbar"><button class="tb" onclick="${l=='cancel'?'home()':'back()'}">${l=='cancel'?'取消交易':'〈 上一步'}</button><button class="tb home" onclick="home()">⌂ 首頁<br>Home</button></div>`;
-const fmt=d=>d.toISOString().slice(0,10),hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-function seed(s){let h=1779033703;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}return()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}}
+const setBar=h=>{document.getElementById('tbar').innerHTML=h;};
+const bb=l=>`<button class="tb" onclick="${l=='cancel'?'home()':'back()'}">${l=='cancel'?'取消交易':'〈 上一步'}</button><button class="tb home" onclick="home()">⌂ 首頁<br>Home</button>`;
+const fmt=d=>d.toISOString().slice(0,10);
+const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+function seed(s){let h=1779033703;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296;};}
 function genTrains(date,frm,to){const rnd=seed(date+frm+to),now=new Date(),day=new Date(date+'T00:00:00');
  const dist=Math.max(1,Math.abs(ST.findIndex(x=>x[0]==to)-ST.findIndex(x=>x[0]==frm))),out=[];
  for(let i=0;i<5;i++){const dep=new Date(day.getTime()+(11*60+24+i*67+Math.floor(rnd()*20))*60000);
   const dur=8+6*dist,arr=new Date(dep.getTime()+dur*60000);
   if(dep.toDateString()===now.toDateString()&&(dep-now)<45*60000)continue;
-  const b=64+14*dist;out.push({no:'G'+(5800+Math.floor(rnd()*180)+i),dep:hm(dep),arr:hm(arr),dur,dt:dep.toISOString(),f:{'一等座':Math.round(b*1.59),'二等座':b}});}
+  const b=64+14*dist;out.push({no:'G'+(5800+Math.floor(rnd()*180)+i),dep:hm(dep),arr:hm(arr),dur:dur,dt:dep.toISOString(),f:{'一等座':Math.round(b*1.59),'二等座':b}});}
  return out;}
 function genId(t){const R=n=>Math.floor(Math.random()*n);
- if(t.includes('居民身份證')||t.includes('居住證'))return String(R(900000)+100000)+'********'+String(R(9000)+1000;
+ if(t.includes('居民身份證')||t.includes('居住證'))return String(R(900000)+100000)+'********'+String(R(9000)+1000);
  if(t.includes('來往內地'))return 'H'+String(R(100000000)).padStart(8,'0');
  if(t.includes('來往大陸'))return String(R(100000000)).padStart(8,'0');
  return 'E'+String(R(100000000)).padStart(8,'0');}
@@ -94,8 +95,8 @@ const slipHTML=o=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-heig
 乘車日期：${o.travel_date}<br>車　　次：${o.train_no}<br>
 出發站：${o.from_station}　${o.dep_time}<br>到達站：${o.to_station}　${o.arr_time}<br>
 車廂等級：${o.coach_class}<br>車票數量：${o.qty} 張<br>總　　額：HKD ${o.total}<hr>
-乘車人證件資料：<br>${o.passengers.map((p,i)=>`${i+1}. ${p.id_type}　${p.id_no}`).join('<br>')}
-${o.free_children.length?`<br>免費乘車小童：<br>${o.free_children.map((c,i)=>`${i+1}. ${c.id_type}　${c.id_no}`).join('<br>')}`:''}
+乘車人證件資料：<br>${o.passengers.map((p,i)=>(i+1)+'. '+p.id_type+'　'+p.id_no).join('<br>')}
+${o.free_children.length?`<br>免費乘車小童：<br>${o.free_children.map((c,i)=>(i+1)+'. '+c.id_type+'　'+c.id_no).join('<br>')}`:''}
 <hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
 const receiptHTML=()=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.6">
 <b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>
@@ -103,51 +104,43 @@ const receiptHTML=()=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-
 此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
 
-/* ===== 首頁（照抄真機） ===== */
-function home(){S={};$('#hbar').style.display='none';go(`
+function home(){S={};setBar('');go(`
  <div class="hgrid">
-  <button class="hb green" style="border:4px solid #d33" onclick="pdpa(1)"><span>🚄</span>購買車票</button>
-  <button class="hb" style="background:#3d7ab8" onclick="notice('示範機暫不提供靈活行服務')"><span>🎫</span>靈活行</button>
-  <button class="hb tall" style="background:#3d7ab8;flex-direction:column" onclick="notice('購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印')"><span>🧾</span>領取報銷憑證</button>
-  <button class="hb" style="background:#3d7ab8" onclick="S.cf=0;childFlow()"><span></span>免費乘車兒童</button>
+  <button class="hb green" onclick="pdpa(1)"><span>🚄</span>購買車票</button>
+  <button class="hb" onclick="notice('示範機暫不提供靈活行服務')"><span>🎫</span>靈活行</button>
+  <button class="hb tall" style="flex-direction:column" onclick="notice('購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印')"><span>🧾</span>領取報銷憑證</button>
+  <button class="hb" onclick="S.cf=0;childFlow()"><span></span>免費乘車兒童</button>
   <button class="hb yellow" onclick="recollect()"><span>✉️</span>領取行程信息提示</button>
  </div>
  <button class="btn lang" onclick="notice('示範版本只提供繁體中文')">繁體/English</button>`);}
-function notice(t){go(`<div class="modal" style="background:rgba(0,0,0,0)"><div class="mbox"><p style="font-size:20px;margin-bottom:18px">${t}</p><button class="btn" onclick="home()">確定</button></div></div>`);}
+function notice(t){go(`<div class="modal"><div class="mbox"><p style="font-size:20px;margin-bottom:18px">${t}</p><button class="btn" onclick="home()">確定</button></div></div>`);}
+function back(){if(S.step==1)home();else if(S.step==2)s1();else if(S.step==3)s2();else home();}
 
-/* ===== 收集個人資料聲明 1/3 ===== */
-const PDPA=[`閣下所提供的個人資料（下稱「資料」）將會被收集及處理，用於處理購票、登記乘車人證件及列印車票相關用途。如未能提供所需資料，本機或無法完成購票程序。`,`資料將於列車開出後30天內銷毀。閣下可於車站客務中心查閱或更正所提供的資料。證件掃瞄紀錄僅用於核對乘車人身份，不會用於任何其他用途。`,`如閣下不接受本聲明，將無法於售票機完成購票。詳情可致電客務熱線 852 21200888 或瀏覽 www.mtr.com.hk/highspeed 查詢。`];
-function pdpa(p){$('#hbar').style.display='';go(topbar('back')+`
+const PDPA=["閣下所提供的個人資料（下稱「資料」）將會被收集及處理，用於處理購票、登記乘車人證件及列印車票相關用途。如未能提供所需資料，本機或無法完成購票程序。","資料將於列車開出後30天內銷毀。閣下可於車站客務中心查閱或更正所提供的資料。證件掃瞄紀錄僅用於核對乘車人身份，不會用於任何其他用途。","如閣下不接受本聲明，將無法於售票機完成購票。詳情可致電客務熱線 852 21200888 或瀏覽 www.mtr.com.hk/highspeed 查詢。"];
+function pdpa(p){setBar(bb('back'));go(`
  <div style="padding:20px 60px"><div class="pdpa"><span class="pnum">${p}/3</span><span class="side" onclick="pdpa(${Math.min(3,p+1)})">下一頁</span>
  <h3>收集個人資料聲明 （下稱「聲明」）</h3><p>${PDPA[p-1]}</p></div>
  <div style="text-align:center;margin-top:16px"><button class="btn" style="margin-right:30px" onclick="home()">不接受</button><button class="btn orange" onclick="s1()">接受</button></div></div>`);}
-function back(){if(S.step==1)home();else if(S.step==2)s1();else if(S.step==3)s2();else home();}
 
-/* ===== 步驟一：車站＋日期 ===== */
-function s1(){S.step=1;S.dir=S.dir||'out';S.main=S.main||'福田';S.date=S.date||fmt(new Date());
- $('#hbar').style.display='';go(topbar('back')+`
- <div style="padding:16px 40px"><div class="panel" style="width:62%;padding-bottom:20px"><span class="tab">車站</span>
-  <div class="sgrid">${ST.map(s=>{const sel=(S.dir=='out'&&S.main==s[0])||(S.dir=='in'&&S.main==s[0])||(s[0]=='香港西九龍'&&false);
-   const isSel=S.main==s[0]||(s[0]=='香港西九龍'&&false);
-   return `<div class="st ${(S.main==s[0])?'sel':''}" onclick="pickSt('${s[0]}')">${s[0]}<small>${s[1]}</small></div>`}).join('')}
-   <div class="st ${S.dir=='in'?'sel':''}" style="display:none"></div></div>
+function s1(){S.step=1;S.dir=S.dir||'out';S.main=S.main||'福田';S.date=S.date||fmt(new Date());setBar(bb('back'));
+ const dep=S.dir=='out'?'香港西九龍':S.main,arr=S.dir=='out'?S.main:'香港西九龍';
+ go(`<div style="padding:16px 40px"><div class="panel" style="width:62%;padding-bottom:20px"><span class="tab">車站</span>
+  <div class="sgrid">${ST.map(s=>`<div class="st ${arr==s[0]?'sel':''}" onclick="pickSt('${s[0]}')">${s[0]}<small>${s[1]}</small></div>`).join('')}</div>
   <div style="text-align:center;margin-top:14px"><button class="btn" onclick="s1()">下一頁</button></div></div>
- <div class="rcol" style="position:absolute">
-  <div class="lb">出發站</div><div class="fbox">${S.dir=='out'?'香港西九龍':S.main}<small>${S.dir=='out'?'HKWestKowloon':'Futian'}</small></div>
-  <div class="lb">到達站</div><div class="fbox sel">${S.dir=='out'?S.main:'香港西九龍'}<small>&nbsp;</small></div>
+ <div class="rcol">
+  <div class="lb">出發站</div><div class="fbox">${dep}<small>&nbsp;</small></div>
+  <div class="lb">到達站</div><div class="fbox sel">${arr}<small>&nbsp;</small></div>
   <div class="lb">出發日期</div><div class="fbox" onclick="pickDate()">${S.date}</div>
   <div style="text-align:right;margin-top:26px"><button class="btn" onclick="s2()">下一步</button></div>
  </div></div>`);}
-function pickSt(s){if(s=='香港西九龍'){S.dir=S.dir=='out'?'in':'out';}else{S.main=s;}s1();}
-function pickDate(){const days=[...Array(15)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return fmt(d);});
- go(topbar('back')+`<div style="padding:20px 60px"><div class="panel"><p style="margin:10px">選擇15天內出發的日子：</p>
+function pickSt(s){if(s=='香港西九龍'){S.dir=(S.dir=='out')?'in':'out';}else{S.main=s;}s1();}
+function pickDate(){setBar(bb('back'));const days=[];for(let i=0;i<15;i++){const d=new Date();d.setDate(d.getDate()+i);days.push(fmt(d));}
+ go(`<div style="padding:20px 60px"><div class="panel"><p style="margin:10px">選擇15天內出發的日子：</p>
  <div class="sgrid" style="margin-top:10px">${days.map(d=>`<div class="st ${S.date==d?'sel':''}" onclick="S.date='${d}';s1()">${d.slice(5).replace('-','/')}</div>`).join('')}</div></div></div>`);}
 
-/* ===== 步驟二：車次列表 ===== */
-function s2(){S.step=2;S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');
- S.cw=S.cw||0;$('#hbar').style.display='';
- const chips=[0,1,2,3].map(i=>{const d=new Date(S.date+'T00:00:00');d.setDate(d.getDate()+S.cw+i);return d;});
- go(topbar('back')+`<div style="padding:16px 60px"><div class="panel">
+function s2(){S.step=2;S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');S.cw=S.cw||0;setBar(bb('back'));
+ const chips=[];for(let i=0;i<4;i++){const d=new Date(S.date+'T00:00:00');d.setDate(d.getDate()+S.cw+i);chips.push(d);}
+ go(`<div style="padding:16px 60px"><div class="panel">
   ${S.trains.map((t,i)=>`<div class="trow ${S.sel==i?'sel':''}" onclick="S.sel=${i};s2b()">
    <b style="width:70px">${t.no}</b>
    <span style="width:110px">${S.dir=='out'?'香港西九龍':S.main}<br>${t.dep}</span>
@@ -155,40 +148,37 @@ function s2(){S.step=2;S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':
    <span style="width:90px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
    <span style="flex:1;text-align:center">一等座<br>${t.f['一等座'].toFixed(2)}</span>
    <span style="flex:1;text-align:center">二等座<br>${t.f['二等座'].toFixed(2)}</span></div>`).join('')||'<p style="padding:20px">該日沒有可選的車次</p>'}
-  <div style="text-align:center;margin-top:10px">${chips.map((d,i)=>`<span class="chip" onclick="S.date='${fmt(d)}';S.sel=null;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
+  <div style="text-align:center;margin-top:10px">${chips.map((d,i)=>`<span class="chip" onclick="S.date='${fmt(d)}';S.sel=null;S.cw=0;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
   <button class="btn" style="padding:8px 18px" onclick="S.cw+=4;s2()">下一頁</button></div></div></div>`);}
 
-/* ===== 步驟三：等級＋票數 ===== */
-function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.child||0;
- const t=S.trains[S.sel];$('#hbar').style.display='';
- go(topbar('back')+`<div style="padding:16px 60px"><div class="panel" style="width:62%">
+function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
+ const t=S.trains[S.sel];
+ go(`<div style="padding:16px 60px"><div class="panel" style="width:62%">
   <p class="red" style="text-align:center;margin:10px">如您要購買多於9張車票，請往購票處購買</p>
-  <div class="qty">成人票 <button class="circ" onclick="S.adult=Math.max(1,S.adult-1);s2b()">−</button><span class="nbox">${S.adult}</span><button class="circ" onclick="S.adult=Math.min(9,S.adult+S.child<10?S.adult+1:S.adult);s2b()">＋</button></div>
-  <div class="qty">小童票 ${S.child>0?`<button class="circ" onclick="S.child=Math.max(0,S.child-1);s2b()">−</button>`:''}<span class="nbox">${S.child}</span><button class="circ" onclick="S.adult+S.child<9?S.child++:0;s2b()">＋</button></div>
+  <div class="qty">成人票 <button class="circ" onclick="S.adult=Math.max(1,S.adult-1);s2b()">−</button><span class="nbox">${S.adult}</span><button class="circ" onclick="if(S.adult+S.child<9)S.adult++;s2b()">＋</button></div>
+  <div class="qty">小童票 ${S.child>0?'<button class="circ" onclick="S.child=Math.max(0,S.child-1);s2b()">−</button>':''}<span class="nbox">${S.child}</span><button class="circ" onclick="if(S.adult+S.child<9)S.child++;s2b()">＋</button></div>
  </div>
- <div class="rcol" style="position:absolute">
+ <div class="rcol">
   <div class="cls ${S.cls=='一等座'?'sel':''}" onclick="S.cls='一等座';s2b()">一等座 <small>(HK$ ${t.f['一等座'].toFixed(2)})</small></div>
   <div class="cls ${S.cls=='二等座'?'sel':''}" onclick="S.cls='二等座';s2b()">二等座 <small>(HK$ ${t.f['二等座'].toFixed(2)})</small></div>
   <p style="text-align:right;margin:14px 0 6px">車票總數：${S.adult+S.child}張</p>
   <div style="text-align:right"><button class="btn" onclick="startReg()">下一步</button></div>
  </div></div>`);}
 
-/* ===== 摘要頁＋各種彈窗（證件/掃瞄/付款/列印） ===== */
-function totals(){const t=S.trains[S.sel];const u=t.f[S.cls],cu=Math.round(u*0.5);
- return {u,cu,total:u*S.adult+cu*S.child};}
+function totals(){const t=S.trains[S.sel],u=t.f[S.cls],cu=Math.round(u*0.5);return {u:u,cu:cu,total:u*S.adult+cu*S.child};}
 function sumBase(){const t=S.trains[S.sel],T=totals();
  return `<div style="padding:16px 60px">
   <div style="display:flex;align-items:center;gap:20px;font-size:22px;margin:10px 0">
    <b>${S.dir=='out'?'香港西九龍':S.main}</b>
    <span style="text-align:center;font-size:15px">${t.no}<br>${S.date} ${t.dep}</span>⟶<b>${S.dir=='out'?S.main:'香港西九龍'}</b></div>
-  <div class="suml" style="width:55%">成人票 ${S.cls} ×${S.adult}${S.child?`<br>小童票 ${S.cls} ×${S.child}`:''}${S.kids&&S.kids.length?`<br>免費乘車小童 ×${S.kids.length}`:''}</div>
-  <div class="rcol" style="position:absolute">
+  <div class="suml" style="width:55%">成人票 ${S.cls} ×${S.adult}${S.child?'<br>小童票 '+S.cls+' ×'+S.child:''}${(S.kids&&S.kids.length)?'<br>免費乘車小童 ×'+S.kids.length:''}</div>
+  <div class="rcol">
    <div class="lb">車票總價</div><div class="pbox">HK$ ${T.total.toFixed(2)}</div>
    <div class="lb">手續費</div><div class="pbox">HK$ 0.00</div>
    <div class="lb">優惠</div><div class="pbox">HK$ 0.00</div>
    <div class="lb">應付金額</div><div class="pbox">HK$ ${T.total.toFixed(2)}</div>
    <div style="text-align:right;margin-top:14px"><button class="btn" onclick="sum('pay')">付款</button></div></div></div>`;}
-function sum(modal){$('#hbar').style.display='';let m='';
+function sum(modal){setBar(bb('cancel'));let m='';
  if(modal=='id')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:18px">請選擇證件</p>
   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';sum('scan')"><span>🪪</span>${t}</button>`).join('')}</div>
   <div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
@@ -203,16 +193,15 @@ function sum(modal){$('#hbar').style.display='';let m='';
   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';sum('childscan')"><span>🪪</span>${t}</button>`).join('')}</div>
   <div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
  if(modal=='childscan')m=`<div class="modal"><div class="mbox"><p style="font-size:20px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`;
- go(topbar('cancel')+sumBase()+
-  (!modal?`<div style="position:fixed;left:60px;bottom:70px"><button class="btn yellow" ${(S.kids||[]).length>=S.adult?'disabled':''} onclick="sum('child')">添加免費乘車兒童</button></div>`:'')+m);
- if(modal=='scan')setTimeout(()=>{S.pax.push({id_type:S.paxType,id_no:genId(S.paxType)});S.paxType=null;S.pi++;
-   (S.pi<S.adult+S.child)?sum('id'):sum(null);},2500);
- if(modal=='childscan')setTimeout(()=>{S.kids=S.kids||[];S.kids.push({id_type:S.kidType,id_no:genId(S.kidType)});S.kidType=null;sum(null);},2500);
- if(modal=='card')setTimeout(()=>printing(),2500);}
+ go(sumBase()+
+  (!modal?`<div style="position:fixed;left:60px;bottom:70px"><button class="btn" ${((S.kids||[]).length)>=S.adult?'disabled':''} onclick="sum('child')">添加免費乘車兒童</button></div>`:'')+m);
+ if(modal=='scan')setTimeout(function(){S.pax.push({id_type:S.paxType,id_no:genId(S.paxType)});S.paxType=null;S.pi++;
+   if(S.pi<S.adult+S.child){sum('id');}else{sum(null);}},2500);
+ if(modal=='childscan')setTimeout(function(){S.kids=S.kids||[];S.kids.push({id_type:S.kidType,id_no:genId(S.kidType)});S.kidType=null;sum(null);},2500);
+ if(modal=='card')setTimeout(function(){printing();},2500);}
 function startReg(){S.pax=[];S.pi=0;S.kids=S.kids||[];sum('id');}
-function paying(m){S.pay=m;if(m=='感應式信用卡'){sum('card');}else{go(topbar('cancel')+sumBase()+`<div class="modal"><div class="mbox"><p style="font-size:20px">請以${m}掃瞄螢幕 QR Code（模擬）</p></div></div>`);setTimeout(()=>printing(),2500);}}
+function paying(m){S.pay=m;if(m=='感應式信用卡'){sum('card');}else{setBar(bb('cancel'));go(sumBase()+`<div class="modal"><div class="mbox"><p style="font-size:20px">請以${m}掃瞄螢幕 QR Code（模擬）</p></div></div>`);setTimeout(function(){printing();},2500);}}
 
-/* ===== 步驟六：列印視窗（黃框）＋出紙 ===== */
 function printing(){const t=S.trains[S.sel],T=totals();
  const o={id:Date.now(),no:'',created_at:new Date().toLocaleString('zh-HK'),travel_date:S.date,
   from_station:S.dir=='out'?'香港西九龍':S.main,to_station:S.dir=='out'?S.main:'香港西九龍',
@@ -220,41 +209,42 @@ function printing(){const t=S.trains[S.sel],T=totals();
   unit_price:T.u,total:T.total,payment_method:S.pay,passengers:S.pax,free_children:S.kids||[],
   slipPrints:0,receiptPrinted:false};
  o.no='WK'+S.date.replace(/-/g,'')+String(o.id).slice(-4);saveO(o);
- go(topbar('cancel')+sumBase()+`<div class="modal"><div class="mbox print">
+ setBar(bb('cancel'));
+ go(sumBase()+`<div class="modal"><div class="mbox">
   <p style="font-size:20px;margin:10px 0">共列印1張行程信息提示</p>
   <p style="font-size:20px;margin:10px 0">正在為您列印第 <b style="font-size:30px;color:#f08c1e">1</b> 張</p>
   <p style="font-size:20px;margin:10px 0">尚有 0 張未列印</p><div style="text-align:right;font-size:40px">🖨️</div></div></div>`);
  doPrint(slipHTML(o));o.slipPrints=1;saveO(o);
- setTimeout(()=>{doPrint(receiptHTML());o.receiptPrinted=true;saveO(o);},1500);
- setTimeout(()=>home(),4000);}
+ setTimeout(function(){doPrint(receiptHTML());o.receiptPrinted=true;saveO(o);},1500);
+ setTimeout(function(){home();},4000);}
 
-/* ===== 首頁【領取行程信息提示】：只印提示，不印收據 ===== */
-function recollect(){const a=getO().slice().reverse().slice(0,8);$('#hbar').style.display='';
- go(topbar('back')+`<div style="padding:20px 60px"><div class="panel">
+function recollect(){setBar(bb('back'));const a=getO().slice().reverse().slice(0,8);
+ go(`<div style="padding:20px 60px"><div class="panel">
  <p style="margin:10px;font-size:18px">請選擇要領取的訂單（開車前可重複領取，只限印發兩次；不會列印收據）</p>
  ${a.map(o=>{const ok=o.slipPrints<2&&new Date(o.dep_dt)>new Date();
-  return `<button class="btn" style="display:block;width:100%;margin:8px 0" ${ok?'':'disabled'} onclick="reprint(${o.id})">${o.no}　${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`}).join('')||'<p style="margin:14px">沒有訂單</p>'}
+  return `<button class="btn" style="display:block;width:100%;margin:8px 0" ${ok?'':'disabled'} onclick="reprint(${o.id})">${o.no}　${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`;}).join('')||'<p style="margin:14px">沒有訂單</p>'}
  </div></div>`);}
 function reprint(id){const o=getO().find(x=>x.id===id);
- go(`<div class="modal"><div class="mbox print"><p style="font-size:20px;margin:10px 0">共列印1張行程信息提示</p><p style="font-size:20px;margin:10px 0">正在為您列印第 <b style="font-size:30px;color:#f08c1e">${o.slipPrints+1}</b> 張</p><p style="font-size:20px;margin:10px 0">尚有 0 張未列印</p></div></div>`);
- doPrint(slipHTML(o));o.slipPrints++;saveO(o);setTimeout(()=>recollect(),2500);}
+ go(`<div class="modal"><div class="mbox"><p style="font-size:20px;margin:10px 0">共列印1張行程信息提示</p><p style="font-size:20px;margin:10px 0">正在為您列印第 <b style="font-size:30px;color:#f08c1e">${o.slipPrints+1}</b> 張</p><p style="font-size:20px;margin:10px 0">尚有 0 張未列印</p></div></div>`);
+ doPrint(slipHTML(o));o.slipPrints++;saveO(o);setTimeout(function(){recollect();},2500);}
 
-/* ===== 首頁【免費乘車兒童】後補登記 ===== */
-function childFlow(){const os=getO().slice().reverse().slice(0,8);$('#hbar').style.display='';
- if(!S.cf){go(topbar('back')+`<div style="padding:20px 60px"><div class="panel"><p style="margin:14px;font-size:18px">無論於任何購票途徑購票時，如未有登記同行免費乘車小童，亦可於售票機後補登記手續</p><button class="btn" onclick="S.cf=1;childFlow()">添加</button></div></div>`);return;}
- if(!S.cfOrder){go(topbar('back')+`<div style="padding:20px 60px"><div class="panel"><p style="margin:14px;font-size:18px">步驟一：選擇同行成人車票</p>
-  ${os.map(o=>`<button class="btn" style="display:block;width:100%;margin:8px 0" onclick="S.cfOrder=${o.id};S.cfScan1=0;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}</div></div>`);return;}
- if(!S.cfScan1){go(topbar('cancel')+`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:18px">選擇同行成人購票時的證件類別</p>
-  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';childFlow()"><span>🪪</span>${t}</button>`).join('')}</div></div></div>`);return;}
- if(!S.cfScan2){go(topbar('cancel')+`<div class="modal"><div class="mbox"><p style="font-size:20px">請於相關閱讀器掃瞄證件/刷卡（模擬）</p></div></div>`);
-  setTimeout(()=>{S.cfScan2=1;childFlow();},2500);return;}
- if(!S.kidType){go(topbar('cancel')+`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:18px">步驟二：登記同行小童證件</p>
-  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';childFlow()"><span>🪪</span>${t}</button>`).join('')}</div></div></div>`);return;}
- go(topbar('cancel')+`<div class="modal"><div class="mbox"><p style="font-size:20px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`);
- setTimeout(()=>{const o=getO().find(x=>x.id===S.cfOrder);
-  if(o.free_children.length>=o.qty){notice('每位18歲或以上的旅客只可登記一位免費乘車小童');return;}
-  o.free_children.push({id_type:S.kidType,id_no:genId(S.kidType)});saveO(o);
-  go(topbar('back')+`<div style="padding:20px 60px"><div class="panel"><p style="margin:14px;font-size:20px">步驟三：完成添加<br>完成程序後請取回證件</p><button class="btn" onclick="home()">確定</button></div></div>`);},2500);}
+function childFlow(){const os=getO().slice().reverse().slice(0,8);setBar(bb('back'));
+ if(!S.cf){go(`<div style="padding:20px 60px"><div class="panel"><p style="margin:14px;font-size:18px">無論於任何購票途徑購票時，如未有登記同行免費乘車小童，亦可於售票機後補登記手續</p><button class="btn" onclick="S.cf=1;childFlow()">添加</button></div></div>`);return;}
+ if(!S.cfOrder){go(`<div style="padding:20px 60px"><div class="panel"><p style="margin:14px;font-size:18px">步驟一：選擇同行成人車票</p>
+  ${os.map(o=>`<button class="btn" style="display:block;width:100%;margin:8px 0" onclick="S.cfOrder=${o.id};S.paxType=null;S.cfScan1=0;S.cfScan2=0;S.kidType=null;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}</div></div>`);return;}
+ if(!S.cfScan1){
+  if(!S.paxType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:18px">選擇同行成人購票時的證件類別</p>
+   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';childFlow()"><span>🪪</span>${t}</button>`).join('')}</div></div></div>`);return;}
+  setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:20px">請於相關閱讀器掃瞄證件/刷卡（模擬）</p></div></div>`);
+  setTimeout(function(){S.cfScan1=1;S.paxType=null;childFlow();},2500);return;}
+ if(!S.cfScan2){
+  if(!S.kidType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:18px">步驟二：登記同行小童證件</p>
+   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';childFlow()"><span>🪪</span>${t}</button>`).join('')}</div></div></div>`);return;}
+  setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:20px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`);
+  setTimeout(function(){const o=getO().find(x=>x.id===S.cfOrder);
+   if(o.free_children.length>=o.qty){S.kidType=null;notice('每位18歲或以上的旅客只可登記一位免費乘車小童');return;}
+   o.free_children.push({id_type:S.kidType,id_no:genId(S.kidType)});saveO(o);S.kidType=null;S.cfScan2=1;childFlow();},2500);return;}
+ setBar(bb('back'));go(`<div style="padding:20px 60px"><div class="panel"><p style="margin:14px;font-size:20px">步驟三：完成添加<br>完成程序後請取回證件</p><button class="btn" onclick="home()">確定</button></div></div>`);}
 home();
 </script>
 </body>
