@@ -31,8 +31,8 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .panel{background:#fff;border:3px solid #5886C5;border-radius:8px;position:absolute}
 .tab{position:absolute;top:-3px;left:50px;background:#5886C5;color:#fff;padding:8px 90px 8px 30px;font-size:20px;border-radius:0 0 14px 0}
 .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:70px 24px 0}
-.st{background:#fff;border:2px solid #8FB2DE;border-radius:6px;padding:12px 4px;text-align:center;cursor:pointer;font-size:20px;line-height:1.2;height:96px}
-.st small{display:block;font-size:11px;color:#666}
+.st{background:#fff;border:2px solid #8FB2DE;border-radius:6px;padding:12px 4px;text-align:center;cursor:pointer;font-size:28px;line-height:1.2;height:110px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.st small{display:block;font-size:16px;color:#666;margin-top:4px}
 .st.sel{background:#f08c1e;border-color:#f08c1e;color:#fff}.st.sel small{color:#fff}
 .rcol{position:absolute;width:280px}
 .lb{color:#5886C5;font-size:18px;margin:14px 0 6px}
@@ -127,7 +127,7 @@ const FARE={
 '上海虹橋':[1292,2067,2325,2841,4299, 646,1034,1860,2274,3439],
 '南京南':[1123,1796,2020,2470,3708, 562,899,1617,1976,2966],
 '杭州西':[954,1525,1717,null,3124, 478,763,763,1374,null,2499],
-'上':[800,1280,1440,null,2400, 400,640,720,null,1200],
+'上饒':[800,1280,1440,null,2400, 400,640,720,null,1200],
 '成都東':[1019,1631,1835,2242,3096, 510,815,815,1469,1794,2477],
 '重慶西':[862,1376,1551,null,2810, 431,688,688,1241,null,2248],
 '福州':[587,939,1058,null,2015, 294,470,470,847,null,1612],
@@ -399,7 +399,7 @@ function totals(){const t=S.trains[S.sel];const u=fareFor(S.main,S.cls,false,t.s
 function sumBase(){const t=S.trains[S.sel],T=totals();
  return `<div style="position:absolute;left:60px;top:30px;display:flex;align-items:center;gap:30px;font-size:28px">
    <b>${S.dir=='out'?'香港西九龍':S.main}</b>
-   <span style="text-align:center;font-size:18px">${t.no}<br>${S.date} ${t.dep}</span>⟶<b>${S.dir=='out'?S.main:'香港西九龍'}</b></div>
+   <span style="text-align:center;font-size:18px">${t.no}<br>${S.date} ${t.dep}</span><b>${S.dir=='out'?S.main:'香港西九龍'}</b></div>
   <div class="suml" style="position:absolute;left:60px;top:140px;width:900px;height:300px">成人票 ${S.cls} ×${S.adult}${S.child?'<br>小童票 '+S.cls+' ×'+S.child:''}${(S.kids&&S.kids.length)?'<br>免費乘車小童 ×'+S.kids.length:''}</div>
   <div class="rcol" style="right:60px;top:30px;width:340px">
    <div class="lb">車票總價</div><div class="pbox">HK$ ${T.total.toFixed(2)}</div>
