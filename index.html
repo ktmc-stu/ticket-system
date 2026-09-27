@@ -74,6 +74,23 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 #printArea{display:none;line-height:0}
 #printArea img{display:block;margin:0 auto}
 @media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}@page{size:80mm 210mm;margin:0}}
+
+/* 日历样式 */
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;margin-bottom:10px}
+.cal-title{font-size:32px;font-weight:bold;color:#333}
+.cal-nav{display:flex;gap:10px}
+.cal-nav .btn{padding:10px 24px;font-size:20px}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.cal-weekdays span{text-align:center;font-size:18px;font-weight:bold;color:#5886C5}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-day{background:#fff;border:2px solid #8FB2DE;border-radius:6px;padding:16px 4px;text-align:center;cursor:pointer;font-size:26px;min-height:80px;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:all 0.2s}
+.cal-day:hover{background:#e8f0fe}
+.cal-day.sel{background:#f08c1e;border-color:#f08c1e;color:#fff}
+.cal-day.past{background:#e8e8e8;border-color:#ccc;color:#aaa;cursor:not-allowed;pointer-events:none}
+.cal-day.empty{background:transparent;border:none;cursor:default;pointer-events:none}
+.cal-day small{font-size:14px;margin-top:4px}
+.cal-day.sel small{color:#fff}
+.cal-day.past small{color:#999}
 </style>
 </head>
 <body>
@@ -94,7 +111,7 @@ function getIdIcon(t){
  return 'img/id-card.png';
 }
 const SP1=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上饒","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
-const SP2=[["武漢","Wuhan"],["長沙南","Changshanan"],["成都東","Chengdudong"],["重慶西","Chongqingxi"],["福州","Fuzhou"],["昆明南","Kunmingnan"],["梅州西","Meizhouxi"],["南寧東","Nanningdong"],["廈門","Xiamen"],["西安北","Xi'anbei"],["湛江西","Zhanjiangxi"],["張家界西","Zhangjiajiexi"],["肇慶東","Zhaoqingdong"],["杭州西","Hangzhouxi"],["南京南","Nanjingnan"],["潮汕","Chaoshan"],["東莞南","Dongguannan"],["廣州新塘","Guangzhouxintang"],["南沙北","Nanshabei"],["清遠","Qingyuan"]];
+const SP2=[["武漢","Wuhan"],["長沙南","Changshanan"],["成都東","Chengdudong"],["重慶西","Chongqingxi"],["福州","Fuzhou"],["昆明南","Kunmingnan"],["梅州西","Meizhouxi"],["南寧東","Nanningdong"],["廈門","Xiamen"],["西安北","Xi'anbei"],["湛江西","Zhanjiangxi"],["張家界西","Zhangjiajiexi"],["肇慶東","Zhaoqingdong"],["杭州西","Hangzhouxi"],["南京南","Nanjingnan"],["潮汕","Chaoshan"],["東莞南","Dongguannan"],["廣州新塘","Guangzhouxintang"],["南沙北","Nanshabei"],["清遠","Qingyuan"],["贛州西","Ganzhouxi"],["南昌東","Nanchangdong"],["義烏","Yiwu"],["寧波","Ningbo"],["杭州東","Hangzhoudong"]];
 
 const FARE={
 '福田':[79,126,141,173,236, 39,64,113,139,189],
@@ -135,7 +152,12 @@ const FARE={
 '昆明南':[1037,1660,1895,2283,3509, 519,830,830,1516,1826,2807],
 '南寧東':[538,860,968,null,1606, 269,430,775,null,1285],
 '湛江西':[549,865,982,1204,1642, 275,433,785,963,1314],
-'張家界西':[873,1395,1570,1917,2735, 437,697,1256,1533,2188]
+'張家界西':[873,1395,1570,1917,2735, 437,697,1256,1533,2188],
+'贛州西':[392,627,707,null,1330, 197,313,313,566,null,1064],
+'南昌東':[651,1042,1174,null,2108, 326,522,522,939,null,1686],
+'義烏':[822,1316,1481,null,2550, 411,658,658,1184,null,2040],
+'寧波':[597,956,1077,null,1765, 299,478,478,858,null,1412],
+'杭州東':[791,1265,1427,null,2415, 396,633,633,1141,null,1932]
 };
 
 const SPECIAL_FARE={
@@ -145,8 +167,8 @@ const SPECIAL_FARE={
 '廣州東':[216,302,345,null,564, 108,151,173,null,282]
 };
 
-const CLASSES=['二等座','一等座','特等座','優選一等座','商務座'];
-const CLASS_IDX={'二等座':0,'一等座':1,'特等座':2,'優選一等座':3,'商務座':4};
+const CLASSES=['二等座','一等座','特等座','優選一等座','商務座','動臥'];
+const CLASS_IDX={'二等座':0,'一等座':1,'特等座':2,'優選一等座':3,'商務座':4,'動臥':4};
 
 function fareFor(st,cls,child,special){
  const f=special?(SPECIAL_FARE[st]||FARE[st]||null):(FARE[st]||null);
@@ -162,6 +184,14 @@ function hasClass(st,cls,special){
 
 function hasClassForTrain(no, st, cls, special) {
   if (!hasClass(st, cls, special)) return false;
+  if (cls === '動臥') {
+    return /^G(89|90)\d/.test(no);
+  }
+  if (/^G(89|90)\d/.test(no)) {
+    if (cls === '二等座' || cls === '特等座') return true;
+    if (cls === '商務座') return true;
+    return false;
+  }
   if (cls === '商務座') {
     return /^G(3|9)\d/.test(no) || no.indexOf('G60') === 0 || no.indexOf('G61') === 0;
   }
@@ -172,7 +202,12 @@ function hasClassForTrain(no, st, cls, special) {
 }
 
 const TT=[
-// ===== 由香港西九龍出發 - 長途列車 =====
+{n:'G898',t:{'香港西九龍':'20:25','深圳北':'20:43','廣州南':'21:21','長沙南':'23:32','石家莊':'5:28','北京西':'6:53'},sleeper:true},
+{n:'G897',t:{'北京西':'21:01','石家莊':'22:07','鄭州東':'23:50','廣州南':'6:27','深圳北':'7:01','香港西九龍':'7:19'},sleeper:true},
+{n:'G900',t:{'香港西九龍':'20:00','深圳北':'20:18','潮汕':'22:11','廈門北':'23:29','寧波':'4:07','杭州東':'6:06','上海虹橋':'6:58'},sleeper:true},
+{n:'G899',t:{'上海虹橋':'20:15','杭州東':'21:15','寧波':'22:13','深圳北':'7:07','香港西九龍':'7:25'},sleeper:true},
+{n:'G896',t:{'香港西九龍':'20:00','深圳北':'20:18','贛州西':'22:07','南昌東':'23:42','義烏':'5:32','杭州東':'6:06','上海虹橋':'6:58'},sleeper:true},
+{n:'G895',t:{'上海虹橋':'20:15','杭州東':'21:15','義烏':'21:48','南昌東':'23:44','州西':'5:21','深圳北':'7:07','香港西九龍':'7:25'},sleeper:true},
 {n:'G382',t:{'香港西九龍':'11:19','深圳北':'11:38','廣州南':'12:10','長沙南':'14:16','武漢':'15:31','鄭州東':'17:08','石家莊':'18:27','北京西':'19:30'}},
 {n:'G6114',t:{'香港西九龍':'17:16','深圳北':'17:34','廣州南':'18:08','清遠':'18:35','韶關':'19:07','郴州西':'19:40','株洲西':'20:32','長沙南':'20:50'}},
 {n:'G918',t:{'香港西九龍':'10:02','深圳北':'10:21','光明城':'10:36','虎門':'10:51','廣州南':'11:10','肇慶東':'11:48','桂林西':'13:18','貴陽東':'15:05','宜賓西':'16:52','樂山':'17:33','成都東':'18:21'}},
@@ -198,8 +233,6 @@ const TT=[
 {n:'G6080',t:{'香港西九龍':'8:07','深圳北':'8:27','廣州南':'9:05','廣州北':'9:24','韶關':'10:06','郴州西':'10:37','衡陽東':'11:09','邵陽':'12:18','洞口':'12:54','懷化南':'13:27','鳳凰古城':'13:54','吉首東':'14:07','張家界西':'14:49'}},
 {n:'G6048/5',t:{'香港西九龍':'10:18','福田':'10:32','深圳北':'10:43','虎門':'11:04','廣州南':'11:24','江門':'12:08','台山':'12:28','開平南':'12:39','恩平':'12:55','陽江':'13:20','茂名':'14:03','湛江西':'14:39'}},
 {n:'G6580',t:{'香港西九龍':'16:04','福田':'16:18','深圳北':'16:28','光明城':'16:40','虎門':'16:59','廣州南':'17:19','佛山西':'17:42','三水南':'17:58','肇慶東':'18:13'}},
-
-// ===== 由內地出發 - 長途列車 =====
 {n:'G381',t:{'北京西':'10:00','石家莊':'11:02','鄭州東':'12:21','武漢':'13:59','長沙南':'15:13','廣州南':'17:21','深圳北':'17:54','香港西九龍':'18:12'}},
 {n:'G6113',t:{'長沙南':'7:00','株洲西':'7:16','衡陽東':'7:43','郴州西':'8:15','韶關':'8:48','清遠':'9:20','廣州南':'9:49','南沙北':'10:04','深圳北':'10:30','香港西九龍':'10:51'}},
 {n:'G917',t:{'成都東':'10:41','樂山':'11:29','宜賓西':'12:11','貴陽東':'13:59','桂林西':'15:43','肇慶東':'17:16','廣州南':'17:56','南沙北':'18:13','深圳北':'18:39','香港西九龍':'18:59'}},
@@ -219,49 +252,36 @@ const TT=[
 {n:'G5659',t:{'汕尾':'7:05','光明城':'7:56','深圳北':'8:17','福田':'8:27','香港西九龍':'8:42'}},
 {n:'G903',t:{'天津西':'11:05','勝芳':'11:24','白洋淀':'11:58','石家莊':'12:47','邯鄲東':'13:41','鄭州東':'14:37','武漢':'16:39','岳陽東':'17:37','汨羅東':'18:03','長沙南':'18:25','株洲西':'18:42','衡陽東':'19:10','郴州西':'19:45','廣州北':'20:49','廣州南':'21:09','深圳北':'21:43','香港西九龍':'22:01'}},
 {n:'G387',t:{'武漢':'16:02','長沙南':'17:17','廣州南':'19:29','虎門':'19:50','深圳北':'20:14','香港西九龍':'20:32'}},
-{n:'G921',t:{'廈門':'10:15','漳州':'10:48','雲霄':'11:15','饒平':'11:35','潮汕':'11:53','普寧':'12:12','汕尾':'12:43','惠州南':'13:15','深圳北':'13:56','福田':'14:06','香港西九龍':'14:20'}},
+{n:'G921',t:{'廈門':'10:15','漳州':'10:48','雲霄':'11:15','平':'11:35','潮汕':'11:53','普寧':'12:12','汕尾':'12:43','惠州南':'13:15','深圳北':'13:56','福田':'14:06','香港西九龍':'14:20'}},
 {n:'G925',t:{'廈門':'14:10','漳州':'14:43','雲霄':'15:10','詔安':'15:26','饒平':'15:36','潮汕':'15:55','普寧':'16:14','汕尾':'16:45','惠州南':'17:17','深圳北':'17:59','香港西九龍':'18:17'}},
 {n:'G916/3',t:{'西安北':'11:02','華山北':'11:38','洛陽龍門':'12:33','鄭州':'13:13','漯河西':'14:19','信陽東':'15:03','武漢':'15:53','咸寧北':'16:29','岳陽東':'17:01','長沙南':'17:38','株洲西':'17:54','耒陽西':'18:31','郴州西':'18:55','廣州南':'20:13','虎門':'20:32','深圳北':'20:57','福田':'21:08','香港西九龍':'21:22'}},
 {n:'G6079',t:{'張家界西':'15:10','芙蓉鎮':'15:35','吉首東':'15:57','鳳凰古城':'16:10','懷化南':'16:39','洞口':'17:12','邵陽':'17:48','衡陽東':'18:52','耒陽西':'19:09','韶關':'19:55','廣州北':'20:33','廣州南':'20:54','虎門':'21:13','深圳北':'21:33','香港西九龍':'21:51'}},
 {n:'G6046/7',t:{'湛江西':'15:40','茂名':'16:15','陽江':'16:57','恩平':'17:23','開平南':'17:39','台山':'17:49','江門':'18:11','廣州南':'18:59','虎門':'19:19','深圳北':'19:41','香港西九龍':'19:59'}},
 {n:'G6579',t:{'肇慶東':'8:10','三水南':'8:24','佛山西':'8:37','廣州南':'9:00','虎門':'9:19','光明城':'9:36','深圳北':'9:51','福田':'10:01','香港西九龍':'10:15'}},
-
-// ===== 由香港西九龍出發 - 短途列車 =====
 {n:'G5624',t:{'香港西九龍':'7:01','福田':'7:21','深圳北':'7:19'}},
 {n:'G5820',t:{'香港西九龍':'7:07','福田':'7:21','深圳北':'7:31'}},
 {n:'G5636',t:{'香港西九龍':'7:31','福田':'7:45','深圳北':'7:55'}},
 {n:'G6566',t:{'香港西九龍':'7:41','深圳北':'7:59','東莞南':'8:20','東莞':'8:41','廣州新塘':'8:56','廣州東':'9:13'}},
-{n:'G6080',t:{'香港西九龍':'8:07','深圳北':'8:27','廣州南':'9:05'}},
 {n:'G5822',t:{'香港西九龍':'8:12','福田':'8:26'}},
 {n:'G5626',t:{'香港西九龍':'8:17','深圳北':'8:35'}},
 {n:'G6582',t:{'香港西九龍':'8:22','深圳北':'8:40','廣州南':'9:04','廣州東':'9:19'}},
 {n:'G6552',t:{'香港西九龍':'8:30','福田':'8:44','深圳北':'8:56','光明城':'9:12','廣州東':'10:08'}},
-{n:'G924',t:{'香港西九龍':'8:48','福田':'9:02','深圳北':'9:12','東莞南':'9:34'}},
 {n:'G5638',t:{'香港西九龍':'8:56','深圳北':'9:16'}},
-{n:'G914/5',t:{'香港西九龍':'9:02','福田':'9:16','深圳北':'9:26','虎門':'9:51','廣州南':'10:14'}},
 {n:'G6510',t:{'香港西九龍':'9:08','福田':'9:22','深圳北':'9:32'}},
-{n:'G904',t:{'香港西九龍':'9:18','深圳北':'9:36','虎門':'9:59','廣州南':'10:18'}},
 {n:'G5812',t:{'香港西九龍':'9:23','福田':'9:37','東莞南':'9:46','常平':'10:02','東莞':'10:17','廣州新塘':'10:31','廣州南':'10:54','廣州東':'11:11'}},
 {n:'G6554',t:{'香港西九龍':'9:28','深圳北':'9:46','光明城':'10:02','東莞南':'10:17','常平':'10:31','廣州新塘':'10:54','廣州東':'11:11'}},
 {n:'G5628',t:{'香港西九龍':'9:35','深圳北':'9:53'}},
 {n:'G6518',t:{'香港西九龍':'9:40','深圳北':'10:00','虎門':'10:22','南沙北':'10:38','廣州南':'10:58'}},
-{n:'G918',t:{'香港西九龍':'10:02','深圳北':'10:21','光明城':'10:36','虎門':'10:51','廣州南':'11:10'}},
 {n:'G5640',t:{'香港西九龍':'10:13','深圳北':'10:31'}},
-{n:'G6048/5',t:{'香港西九龍':'10:18','福田':'10:32','深圳北':'10:43','虎門':'11:04','廣州南':'11:24'}},
 {n:'G5816',t:{'香港西九龍':'10:23','福田':'10:37'}},
 {n:'G6528',t:{'香港西九龍':'10:29','深圳北':'10:54'}},
 {n:'G6534',t:{'香港西九龍':'10:35','福田':'10:49','深圳北':'11:03','虎門':'11:23','廣州南':'11:42'}},
 {n:'G6546',t:{'香港西九龍':'10:40','深圳北':'10:59','廣州南':'11:20','常平':'11:33','東莞':'11:44','廣州東':'12:16'}},
 {n:'G5630',t:{'香港西九龍':'10:46','福田':'11:00','深圳北':'11:10'}},
 {n:'G6584',t:{'香港西九龍':'11:02','深圳北':'11:20','廣州南':'11:54'}},
-{n:'G908/9',t:{'香港西九龍':'11:14','深圳北':'11:32','廣州南':'12:06'}},
-{n:'G382',t:{'香港西九龍':'11:19','深圳北':'11:38','廣州南':'12:10'}},
 {n:'G5818',t:{'香港西九龍':'11:25','福田':'11:39'}},
 {n:'G5642',t:{'香港西九龍':'11:30','深圳北':'11:48'}},
-{n:'G902',t:{'香港西九龍':'11:35','深圳北':'11:54','杭州西':'18:27','上海虹橋':'19:43'}},
 {n:'G6568',t:{'香港西九龍':'11:41','深圳北':'11:59','東莞南':'12:20','常平':'12:34','廣州南':'12:57','廣州東':'13:13'}},
-{n:'G906',t:{'香港西九龍':'11:52','深圳北':'12:12','廣州南':'12:48'}},
-{n:'G6574/1',t:{'香港西九龍':'11:58','深圳北':'12:16'}},
 {n:'G6540',t:{'香港西九龍':'12:03','深圳北':'12:22','虎門':'12:43','廣州南':'13:02'}},
 {n:'G5632',t:{'香港西九龍':'12:13','深圳北':'12:31'}},
 {n:'G6516',t:{'香港西九龍':'12:18','深圳北':'12:36','虎門':'12:56','廣州南':'13:15'}},
@@ -273,16 +293,13 @@ const TT=[
 {n:'G6536',t:{'香港西九龍':'13:32','福田':'13:47','深圳北':'13:57','廣州南':'14:22'}},
 {n:'G6558',t:{'香港西九龍':'13:38','福田':'13:52','深圳北':'14:02','東莞南':'14:23','東莞':'14:44','廣州新塘':'14:59','廣州南':'15:16'}},
 {n:'G5620',t:{'香港西九龍':'13:49','深圳北':'14:07'}},
-{n:'G386/3',t:{'香港西九龍':'13:58','福田':'14:12','深圳北':'14:22','廣州南':'14:58'}},
 {n:'G6508',t:{'香港西九龍':'14:38','福田':'14:56','深圳北':'15:12','東莞南':'15:38','常平':'15:49','廣州南':'16:14'}},
 {n:'G5622',t:{'香港西九龍':'14:59','深圳北':'15:17'}},
 {n:'G6522',t:{'香港西九龍':'15:11','深圳北':'15:31','虎門':'15:51','廣州南':'16:10'}},
 {n:'G6538',t:{'香港西九龍':'15:17','深圳北':'15:35','虎門':'15:57','廣州南':'16:16'}},
 {n:'G5806',t:{'香港西九龍':'15:27','福田':'15:41'}},
-{n:'G928',t:{'香港西九龍':'15:34','深圳北':'15:52','虎門':'16:14','廣州南':'16:33'}},
 {n:'G5634',t:{'香港西九龍':'15:46','深圳北':'16:04'}},
 {n:'G6570',t:{'香港西九龍':'15:51','深圳北':'16:09','廣州南':'16:30','廣州東':'17:22'}},
-{n:'G6580',t:{'香港西九龍':'16:04','福田':'16:18','深圳北':'16:28','光明城':'16:40','虎門':'16:59','廣州南':'17:19'}},
 {n:'G5828',t:{'香港西九龍':'16:10','福田':'16:24'}},
 {n:'G6512',t:{'香港西九龍':'16:16','深圳北':'16:34'}},
 {n:'G6586',t:{'香港西九龍':'16:27','深圳北':'16:45','廣州南':'17:26'}},
@@ -290,21 +307,16 @@ const TT=[
 {n:'G6560',t:{'香港西九龍':'16:49','福田':'17:03','深圳北':'17:13','東莞南':'17:35','常平':'17:49','東莞':'18:00','廣州新塘':'18:14','廣州南':'18:32'}},
 {n:'G6526',t:{'香港西九龍':'17:00','廣州南':'17:48'}},
 {n:'G5814',t:{'香港西九龍':'17:10','福田':'17:24','深圳北':'17:34'}},
-{n:'G6114',t:{'香港西九龍':'17:16','深圳北':'17:34','廣州南':'18:08'}},
 {n:'G5830',t:{'香港西九龍':'17:24','福田':'17:38','深圳北':'17:48','廣州南':'18:12'}},
 {n:'G6562',t:{'香港西九龍':'17:42','深圳北':'18:01','東莞南':'18:24','常平':'18:49','東莞':'19:16','廣州南':'19:34'}},
 {n:'G6524',t:{'香港西九龍':'18:00','深圳北':'18:18','廣州南':'18:50','廣州東':'19:08'}},
-{n:'G6578/5',t:{'香港西九龍':'18:07','深圳北':'18:25'}},
-{n:'G6590',t:{'香港西九龍':'18:13','福田':'18:27','深圳北':'18:38','光明城':'18:56'}},
 {n:'G5862',t:{'香港西九龍':'18:19','福田':'18:34','深圳北':'18:50','廣州南':'19:18'}},
 {n:'G5656',t:{'香港西九龍':'18:32','深圳北':'18:50'}},
-{n:'G926',t:{'香港西九龍':'18:37','深圳北':'18:56'}},
 {n:'G5614',t:{'香港西九龍':'18:43','福田':'18:57','深圳北':'19:07'}},
 {n:'G5832',t:{'香港西九龍':'18:49','福田':'19:03','深圳北':'19:13','廣州南':'19:35'}},
 {n:'G6550',t:{'香港西九龍':'18:54','深圳北':'19:12','東莞南':'19:47','東莞':'20:09','廣州南':'20:26'}},
 {n:'G6514',t:{'香港西九龍':'19:00','深圳北':'19:18','虎門':'19:42','廣州東':'20:00'}},
 {n:'G5652',t:{'香港西九龍':'19:13','深圳北':'19:27','廣州東':'19:38'}},
-{n:'G6398',t:{'香港西九龍':'19:20','福田':'19:34','深圳北':'19:44','東莞南':'20:05','汕尾':'21:06','汕頭':'22:03'}},
 {n:'G6588',t:{'香港西九龍':'19:43','福田':'19:57','深圳北':'20:07','東莞南':'20:21','常平':'20:38','東莞':'20:49','廣州南':'21:08'}},
 {n:'G5824',t:{'香港西九龍':'19:54','福田':'20:10','深圳北':'20:23','廣州南':'20:50'}},
 {n:'G5658',t:{'香港西九龍':'20:05','深圳北':'20:23'}},
@@ -315,14 +327,11 @@ const TT=[
 {n:'G6532',t:{'香港西九龍':'20:57','福田':'21:11','深圳北':'21:24','光明城':'21:44','廣州南':'22:03'}},
 {n:'G6564',t:{'香港西九龍':'21:02','深圳北':'21:20','東莞南':'21:41','常平':'21:55','東莞':'22:06','廣州新塘':'22:22','廣州南':'22:38'}},
 {n:'G5826',t:{'香港西九龍':'21:12','福田':'21:26'}},
-{n:'G5660',t:{'香港西九龍':'21:44','福田':'21:58','深圳北':'22:08','汕尾':'23:15'}},
 {n:'G5604',t:{'香港西九龍':'22:02','福田':'22:16','深圳北':'22:27','廣州南':'22:55'}},
 {n:'G6502',t:{'香港西九龍':'22:11','福田':'22:25','深圳北':'22:35','廣州南':'23:14'}},
 {n:'G6506',t:{'香港西九龍':'22:26','福田':'22:40','深圳北':'22:50','廣州南':'23:23'}},
 {n:'G6504',t:{'香港西九龍':'22:37','福田':'22:51','深圳北':'23:01','廣州南':'23:36'}},
 {n:'G5608',t:{'香港西九龍':'23:00','福田':'23:14','深圳北':'23:25'}},
-
-// ===== 由內地出發 - 短途列車 =====
 {n:'G5669',t:{'廣州東':'6:32','深圳北':'6:33','福田':'6:45','香港西九龍':'7:00'}},
 {n:'G5801',t:{'深圳北':'6:33','福田':'6:52','香港西九龍':'7:06'}},
 {n:'G5657',t:{'深圳北':'6:54','福田':'7:09','香港西九龍':'7:22'}},
@@ -333,24 +342,20 @@ const TT=[
 {n:'G5609',t:{'深圳北':'7:55','福田':'8:05','香港西九龍':'8:19'}},
 {n:'G5603',t:{'深圳北':'8:05','福田':'8:15','香港西九龍':'8:29'}},
 {n:'G5637',t:{'深圳北':'8:12','福田':'8:22','香港西九龍':'8:36'}},
-{n:'G5659',t:{'光明城':'7:56','深圳北':'8:17','福田':'8:27','香港西九龍':'8:42'}},
 {n:'G6505',t:{'廣州南':'7:48','南沙北':'8:06','深圳北':'8:32','福田':'8:45','香港西九龍':'9:01'}},
 {n:'G5821',t:{'深圳北':'8:45','福田':'8:45','香港西九龍':'9:01'}},
 {n:'G6551',t:{'廣州東':'7:25','東莞南':'7:53','深圳北':'8:15','福田':'8:53','香港西九龍':'9:07'}},
 {n:'G5627',t:{'深圳北':'8:43','福田':'8:53','香港西九龍':'9:17'}},
 {n:'G6517',t:{'廣州南':'8:15','虎門':'8:34','深圳北':'8:58','福田':'9:08','香港西九龍':'9:22'}},
-{n:'G6397',t:{'深圳北':'9:15','福田':'9:25','香港西九龍':'9:39'}},
 {n:'G6545',t:{'廣州東':'8:33','廣州新塘':'8:49','東莞':'9:05','常平':'9:16','東莞南':'9:30','深圳北':'9:56','福田':'10:07','香港西九龍':'10:21'}},
 {n:'G5629',t:{'深圳北':'10:10','香港西九龍':'10:28'}},
 {n:'G6581',t:{'深圳北':'10:15','福田':'10:25','香港西九龍':'10:39'}},
-{n:'G6113',t:{'廣州南':'9:49','南沙北':'10:04','深圳北':'10:30','香港西九龍':'10:51'}},
 {n:'G5619',t:{'深圳北':'10:35','香港西九龍':'10:56'}},
 {n:'G6503',t:{'深圳北':'10:35','香港西九龍':'11:01'}},
 {n:'G5815',t:{'深圳北':'10:54','福田':'10:54','香港西九龍':'11:08'}},
 {n:'G5641',t:{'深圳北':'10:49','福田':'10:59','香港西九龍':'11:13'}},
 {n:'G6565',t:{'廣州東':'9:30','廣州新塘':'9:46','東莞':'10:02','常平':'10:13','東莞南':'10:28','深圳北':'10:54','福田':'11:04','香港西九龍':'11:18'}},
 {n:'G6511',t:{'廣州南':'10:28','虎門':'10:47','深圳北':'11:10','香港西九龍':'11:29'}},
-{n:'G6572/3',t:{'深圳北':'11:05','福田':'11:19','香港西九龍':'11:34'}},
 {n:'G6539',t:{'廣州南':'10:37','虎門':'10:56','深圳北':'11:16','香港西九龍':'11:40'}},
 {n:'G5631',t:{'深圳北':'11:31','香港西九龍':'11:51'}},
 {n:'G6515',t:{'廣州南':'10:52','虎門':'11:12','深圳北':'11:36','香港西九龍':'11:56'}},
@@ -364,57 +369,38 @@ const TT=[
 {n:'G6555',t:{'廣州東':'11:32','廣州新塘':'11:48','東莞':'12:04','常平':'12:15','東莞南':'12:34','深圳北':'12:59','香港西九龍':'13:18'}},
 {n:'G5857',t:{'深圳北':'13:09','香港西九龍':'13:23'}},
 {n:'G6583',t:{'深圳北':'12:40','深圳北':'12:59','香港西九龍':'13:31'}},
-{n:'G6589',t:{'深圳北':'13:05','福田':'13:21','香港西九龍':'13:37'}},
 {n:'G5645',t:{'深圳北':'13:33','香港西九龍':'13:31'}},
-{n:'G919',t:{'福州':'8:50','莆田':'9:27','泉州東':'9:47','廈門北':'10:15','漳州':'10:33','潮汕':'11:26','普寧':'11:45','陸豐':'12:07','汕尾':'12:22','惠東':'12:48','深圳北':'13:33','香港西九龍':'13:52'}},
 {n:'G5807',t:{'深圳北':'13:09','香港西九龍':'13:23'}},
 {n:'G6547',t:{'廣州東':'12:38','深圳北':'13:23','福田':'13:48','香港西九龍':'14:13'}},
 {n:'G6525',t:{'深圳北':'13:43','福田':'13:59','香港西九龍':'14:18'}},
 {n:'G5621',t:{'深圳北':'13:43','福田':'13:59','香港西九龍':'14:18'}},
 {n:'G6521',t:{'深圳北':'14:00','福田':'14:18','香港西九龍':'14:35'}},
 {n:'G5647',t:{'深圳北':'14:20','福田':'14:37','香港西九龍':'14:53'}},
-{n:'G927',t:{'南寧東':'11:18','梧州南':'12:46','佛山西':'13:55','廣州南':'14:20','深圳北':'14:55','香港西九龍':'15:15'}},
 {n:'G5623',t:{'深圳北':'15:01','福田':'15:13','香港西九龍':'15:30'}},
 {n:'G5805',t:{'深圳北':'15:01','福田':'15:13','香港西九龍':'15:45'}},
 {n:'G6557',t:{'廣州東':'14:41','廣州新塘':'14:57','東莞':'15:13','常平':'15:24','東莞南':'15:39','深圳北':'16:06','福田':'16:17','香港西九龍':'16:31'}},
 {n:'G6537',t:{'深圳北':'15:30','福田':'15:45','香港西九龍':'16:06'}},
 {n:'G5635',t:{'深圳北':'15:30','福田':'15:45','香港西九龍':'16:17'}},
-{n:'G910/07',t:{'昆明南':'9:13','貴陽北':'11:49','桂林西':'13:46','肇慶東':'15:20','廣州南':'16:01','深圳北':'16:37','香港西九龍':'16:57'}},
 {n:'G5827',t:{'深圳北':'16:01','福田':'16:21','香港西九龍':'16:39'}},
 {n:'G6559',t:{'深圳北':'15:40','廣州南':'15:56','東莞':'16:12','東莞南':'16:23','深圳北':'16:37','香港西九龍':'17:24'}},
 {n:'G6523',t:{'深圳北':'16:32','福田':'16:54','香港西九龍':'17:10'}},
-{n:'G6576/7',t:{'深圳北':'17:27','香港西九龍':'17:47'}},
 {n:'G5813',t:{'深圳北':'16:59','福田':'17:19','香港西九龍':'17:34'}},
 {n:'G5829',t:{'深圳北':'17:21','福田':'17:45','香港西九龍':'18:07'}},
-{n:'G381',t:{'北京西':'10:00','石家莊':'11:02','鄭州東':'12:21','武漢':'13:59','長沙南':'15:13','廣州南':'17:21','深圳北':'17:54','香港西九龍':'18:12'}},
-{n:'G925',t:{'廈門':'14:10','漳州':'14:43','雲霄':'15:10','詔安':'15:26','饒平':'15:36','潮汕':'15:55','普寧':'16:14','汕尾':'16:45','惠州南':'17:17','深圳北':'17:59','香港西九龍':'18:17'}},
-{n:'G6391',t:{'深圳北':'18:04','香港西九龍':'18:22'}},
 {n:'G6549',t:{'廣州東':'16:47','深圳北':'17:36','福田':'17:50','香港西九龍':'18:12'}},
 {n:'G6513',t:{'深圳北':'17:36','福田':'17:50','香港西九龍':'18:12'}},
 {n:'G5651',t:{'深圳北':'17:36','福田':'17:50','香港西九龍':'18:12'}},
 {n:'G6585',t:{'深圳北':'17:36','福田':'17:50','香港西九龍':'18:12'}},
-{n:'G917',t:{'成都東':'10:41','樂山':'11:29','宜賓西':'12:11','貴陽東':'13:59','桂林西':'15:43','肇慶東':'17:16','廣州南':'17:56','南沙北':'18:13','深圳北':'18:39','香港西九龍':'18:59'}},
 {n:'G5861',t:{'深圳北':'18:03','福田':'18:13','香港西九龍':'18:36'}},
 {n:'G5831',t:{'廣州東':'17:47','深圳北':'18:35','福田':'18:49','香港西九龍':'19:12'}},
 {n:'G6569',t:{'深圳北':'18:03','福田':'18:13','香港西九龍':'18:36'}},
-{n:'G923',t:{'福州':'14:38','福州南':'14:55','福清西':'15:11','莆田':'15:28','泉州南':'15:54','廈門北':'16:15','漳州':'16:33','潮汕':'17:25','普寧':'17:44','汕尾':'18:15','惠州南':'18:46','東莞南':'19:09','深圳北':'19:30','香港西九龍':'19:48'}},
-{n:'G6046/7',t:{'湛江西':'15:40','茂名':'16:15','陽江':'16:57','恩平':'17:23','開平南':'17:39','台山':'17:49','江門':'18:11','廣州南':'18:59','虎門':'19:19','深圳北':'19:41','香港西九龍':'19:59'}},
 {n:'G5653',t:{'深圳北':'18:50','福田':'19:09','香港西九龍':'19:30'}},
-{n:'G387',t:{'武漢':'16:02','長沙南':'17:17','廣州南':'19:29','虎門':'19:50','深圳北':'20:14','香港西九龍':'20:32'}},
 {n:'G6531',t:{'深圳北':'18:50','福田':'19:09','香港西九龍':'19:34'}},
 {n:'G6561',t:{'深圳北':'19:29','福田':'19:41','香港西九龍':'20:05'}},
 {n:'G5823',t:{'深圳北':'19:29','福田':'19:41','香港西九龍':'20:19'}},
 {n:'G6509',t:{'深圳北':'20:13','福田':'20:32','香港西九龍':'20:44'}},
-{n:'G916/3',t:{'西安北':'11:02','華山北':'11:38','洛陽龍門':'12:33','鄭州':'13:13','漯河西':'14:19','信陽東':'15:03','武漢':'15:53','咸寧北':'16:29','岳陽東':'17:01','長沙南':'17:38','株洲西':'17:54','耒陽西':'18:31','郴州西':'18:55','廣州南':'20:13','虎門':'20:32','深圳北':'20:57','福田':'21:08','香港西九龍':'21:22'}},
-{n:'G6079',t:{'張家界西':'15:10','芙蓉鎮':'15:35','吉首東':'15:57','鳳凰古城':'16:10','懷化南':'16:39','洞口':'17:12','邵陽':'17:48','衡陽東':'18:52','耒陽西':'19:09','韶關':'19:55','廣州北':'20:33','廣州南':'20:54','虎門':'21:13','深圳北':'21:33','香港西九龍':'21:51'}},
-{n:'G901',t:{'上海虹橋':'13:50','蘇州南':'14:18','杭州西':'15:05','黃山北':'16:21','景德鎮北':'17:04','南昌東':'17:56','贛州西':'19:32','惠州北':'20:53','東莞南':'21:13','深圳北':'21:38','香港西九龍':'21:56'}},
-{n:'G903',t:{'天津西':'11:05','勝芳':'11:24','白洋淀':'11:58','石家莊':'12:47','邯鄲東':'13:41','鄭州東':'14:37','武漢':'16:39','岳陽東':'17:37','汨羅東':'18:03','長沙南':'18:25','株洲西':'18:42','衡陽東':'19:10','郴州西':'19:45','廣州北':'20:49','廣州南':'21:09','深圳北':'21:43','香港西九龍':'22:01'}},
 {n:'G5825',t:{'深圳北':'21:09','福田':'21:23','香港西九龍':'21:43'}},
 {n:'G6563',t:{'深圳北':'21:28','福田':'21:47','香港西九龍':'22:07'}},
-{n:'G5867',t:{'深圳北':'21:28','深圳北':'21:47','香港西九龍':'22:33'}},
 {n:'G6587',t:{'廣州東':'20:40','廣州南':'20:56','虎門':'21:12','光明城':'21:23','深圳北':'21:37','福田':'22:03','香港西九龍':'22:19'}},
-
-// ===== 特別車次 =====
 {n:'G6556',t:{'香港西九龍':'12:23','虎門':'13:06','南沙北':'13:21','廣州南':'14:11'},special:true},
 {n:'G6507',t:{'廣州東':'13:20','廣州南':'13:39','虎門':'14:12','光明城':'14:22','深圳北':'14:37','福田':'14:50','香港西九龍':'15:05'},special:true}
 ];
@@ -430,19 +416,26 @@ const tm=s=>{const parts=s.split(':');return (+parts[0])*60+(+parts[1]);};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const day15=()=>{const b=new Date();b.setHours(0,0,0,0);const a=[];for(let i=0;i<15;i++){a.push(new Date(b.getTime()+i*86400000));}return a;};
 const dayIdx=d=>{const parts=d.split('-');const target=new Date(parts[0],parts[1]-1,parts[2]);const now=new Date();now.setHours(0,0,0,0);return Math.round((target-now)/86400000);};
+const today=new Date();today.setHours(0,0,0,0);
+const maxDate=new Date(today.getTime()+14*86400000);
 
 function trainsFor(date,frm,to){
   const now=new Date();now.setHours(0,0,0,0);
   const out=[];
   TT.forEach(x=>{
     if(!x.t[frm]||!x.t[to])return;
-    const a=tm(x.t[frm]),b=tm(x.t[to]);
+    if(x.sleeper){
+      if((frm==='香港西九龍'&&(to==='深圳北'||to==='廣州南'))||(to==='香港西九龍'&&(frm==='深圳北'||frm==='廣州南')))return;
+      if(x.n==='G899'&&frm==='寧波')return;
+    }
+    let a=tm(x.t[frm]),b=tm(x.t[to]);
+    if(b<a)b+=1440;
     if(b<=a)return;
     const parts=date.split('-');
     const dep=new Date(parts[0],parts[1]-1,parts[2]);
     dep.setMinutes(a);
     if(dep.toDateString()===now.toDateString()&&(dep-now)<45*60000)return;
-    out.push({no:x.n,dep:x.t[frm],arr:x.t[to],dur:b-a,dt:dep.toISOString(),special:!!x.special});
+    out.push({no:x.n,dep:x.t[frm],arr:x.t[to],dur:b-a,dt:dep.toISOString(),special:!!x.special,sleeper:!!x.sleeper});
   });
   out.sort((p,q)=>tm(p.dep)-tm(q.dep));
   return out;
@@ -457,62 +450,21 @@ const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
 const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
 function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
-function printPdf(url) {
-  return new Promise(function(resolve, reject) {
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed; left:-10000px; top:0; width:80mm; height:210mm; border:0;';
-    document.body.appendChild(iframe);
-    let done = false;
-    const cleanup = function() {
-      if (!done) { done = true; setTimeout(function(){ if(iframe.parentNode) iframe.remove(); }, 1000); }
-    };
-    iframe.onload = function() {
-      setTimeout(function() {
-        if (done) return;
-        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(function(){ cleanup(); resolve(); }, 2500); }
-        catch (e) { cleanup(); reject(e); }
-      }, 1500);
-    };
-    iframe.onerror = function() { cleanup(); reject(new Error('Load error')); };
-    setTimeout(function(){ if (!done) { cleanup(); reject(new Error('Timeout')); } }, 10000);
-    iframe.src = url + '?t=' + Date.now();
-  });}
-const SLIP_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車　　次：G5818<br>出發站：香港西九龍　11:24<br>到達站：福田　11:38<br>車等級：二等座<br>車票數量：1 張<br>總　　額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
-const RECEIPT_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
+function printPdf(url){return new Promise(function(resolve,reject){const iframe=document.createElement('iframe');iframe.style.cssText='position:fixed;left:-10000px;top:0;width:80mm;height:210mm;border:0;';document.body.appendChild(iframe);let done=false;const cleanup=function(){if(!done){done=true;setTimeout(function(){if(iframe.parentNode)iframe.remove();},1000);}};iframe.onload=function(){setTimeout(function(){if(done)return;try{iframe.contentWindow.focus();iframe.contentWindow.print();setTimeout(function(){cleanup();resolve();},2500);}catch(e){cleanup();reject(e);}},1500);};iframe.onerror=function(){cleanup();reject(new Error('Load error'));};setTimeout(function(){if(!done){cleanup();reject(new Error('Timeout'));}},10000);iframe.src=url+'?t='+Date.now();});}
+const SLIP_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車次：G5818<br>出發站：香港西九龍 11:24<br>到達站：福田 11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。</b></div>`;
+const RECEIPT_FIXED=`<div class="docx"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。</div>`;
 async function slipPrintRaw(){try{await printPdf('ticket_slip.pdf');}catch(e){doPrint(SLIP_FIXED);}}
 async function receiptPrint(){try{await printPdf('receipt.pdf');}catch(e){doPrint(RECEIPT_FIXED);}}
-const printModalHTML=(N,cur,rem)=>`<div class="modal"><div class="mbox" style="min-width:640px">
- <p style="font-size:24px;margin:14px 0">共列印${N}張行程信息提示</p>
- <p style="font-size:24px;margin:14px 0">正在為您列印第 <b style="font-size:38px;color:#f08c1e">${cur}</b> 張</p>
- <p style="font-size:24px;margin:14px 0">尚有 ${rem} 張未列印</p><div style="text-align:right"><img style="width:120px;height:120px;object-fit:contain" src="img/printer.png"></div></div></div>`;
-const receiptModalHTML=()=>`<div class="modal"><div class="mbox" style="min-width:560px">
- <p style="font-size:24px;margin:14px 0">正在為您列印收據…</p>
- <p style="font-size:18px;color:#666">請取走收據（完成交易後不能再次列印）</p>
- <div style="text-align:right"><img style="width:120px;height:120px;object-fit:contain" src="img/printer.png"></div></div></div>`;
-function unsup(t){setBar(bb('back'));go(`
- <div class="panel" style="left:30px;top:40px;right:30px;height:780px;display:flex;flex-direction:column;align-items:center;justify-content:center">
-  <p style="font-size:36px;color:#333">${t}</p>
-  <button class="btn" style="margin-top:40px" onclick="home()">確定</button>
- </div>`);}
+const printModalHTML=(N,cur,rem)=>`<div class="modal"><div class="mbox" style="min-width:640px"><p style="font-size:24px;margin:14px 0">共列印${N}張行程信息提示</p><p style="font-size:24px;margin:14px 0">正在為您列印第 <b style="font-size:38px;color:#f08c1e">${cur}</b> 張</p><p style="font-size:24px;margin:14px 0">尚有 ${rem} 張未列印</p><div style="text-align:right"><img style="width:120px;height:120px;object-fit:contain" src="img/printer.png"></div></div></div>`;
+const receiptModalHTML=()=>`<div class="modal"><div class="mbox" style="min-width:560px"><p style="font-size:24px;margin:14px 0">正在為您列印收據…</p><p style="font-size:18px;color:#666">請取走收據（完成交易後不能再次列印）</p><div style="text-align:right"><img style="width:120px;height:120px;object-fit:contain" src="img/printer.png"></div></div></div>`;
+function unsup(t){setBar(bb('back'));go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;display:flex;flex-direction:column;align-items:center;justify-content:center"><p style="font-size:36px;color:#333">${t}</p><button class="btn" style="margin-top:40px" onclick="home()">確定</button></div>`);}
 function notice(t){go(`<div class="modal"><div class="mbox"><p style="font-size:24px;margin-bottom:24px">${t}</p><button class="btn" onclick="home()">確定</button></div></div>`);}
-function home(){S={};setBar('');go(`
- <div class="hgrid">
-  <button class="hb green" style="grid-column:1/3" onclick="pdpa(1)"><img class="ic" src="img/btn-buy.png">購買車票</button>
-  <button class="hb" onclick="unsup('本設備暫不支持辦理靈活行')"><img class="ic" src="img/btn-flex.png">靈活行</button>
-  <button class="hb tall" onclick="unsup('本設備暫不支持打印報銷憑證')"><img class="ic" src="img/btn-reimburse.png">領取報銷憑證</button>
-  <button class="hb" onclick="S.cf=0;childFlow()"><img class="ic" src="img/btn-child.png">免費乘車兒童</button>
-  <button class="hb yellow" style="grid-column:2/4" onclick="S.pick={};recollect()"><img class="ic" src="img/btn-slip.png">領取行程信息提示</button>
-  <button class="btn lang" onclick="unsup('本設備暫不支持切換語言')">繁體/English</button>
- </div>`);}
+function home(){S={};setBar('');go(`<div class="hgrid"><button class="hb green" style="grid-column:1/3" onclick="pdpa(1)"><img class="ic" src="img/btn-buy.png">購買車票</button><button class="hb" onclick="unsup('本設備暫不支持辦理靈活行')"><img class="ic" src="img/btn-flex.png">靈活行</button><button class="hb tall" onclick="unsup('本設備暫不支持打印報銷憑證')"><img class="ic" src="img/btn-reimburse.png">領取報銷憑證</button><button class="hb" onclick="S.cf=0;childFlow()"><img class="ic" src="img/btn-child.png">免費乘車兒童</button><button class="hb yellow" style="grid-column:2/4" onclick="S.pick={};recollect()"><img class="ic" src="img/btn-slip.png">領取行程信息提示</button><button class="btn lang" onclick="unsup('本設備暫不支持切換語言')">繁體/English</button></div>`);}
 function back(){if(S.step=='date')s1();else if(S.step==1)home();else if(S.step==2)s1();else if(S.step==3)s2();else home();}
-const PDPA=["閣下所提供的乘車人個人資料（定義見下文）將被香港鐵路有限公司（下稱「港鐵公司」或「我們」）用於 (1) 處理及管理高速鐵路（下稱「高鐵」）的購票交易(包括發出及/或印發有效的高鐵車票、印發為電子車票所發出以記錄行程資料及/或作為憑證的乘車人文件、辦理改票、退票、報失及補領實體車票、補票手續及/或用作投訴及/或調查的參考依據)；(2) 查驗車票時核實乘車人的個人身份及資格；(3) 管理及營運高鐵服務；(4) 調查與高鐵服務有關的投訴、事故、意外或進行任何與高鐵服務有關的刑事、民事、行政或其他法律程序；(5) 遵從適用的法律或監管要求 (包括但不限於香港及中國內地適用的法律或監管要求)；及 (6) 遵從政府部門、行政或監管機構的要求及/或與它們就任何調查合作(下稱「該目的」)。為核實乘車人的個人身份，乘車人的完整姓名及身份證明文件部分號碼、字母及/或字樣 (視情況而定) 必須列印在實體車票上。","閣下必須向我們提供乘車人的行程資料 (如到發車站、列車班次、時間及車廂等級等)、付款資料、有效身份證明文件上顯示的全名、出生日期、國籍、證件類別、證件全部號碼及有效期限，並出示乘車人的有效身份證明文件正本或複印本 (視情況而定) (「個人資料」)。如閣下未能提供以上所述真確的個人資料，我們將不會發出車票。如閣下並非乘車人而向我們提供乘車人的個人資料，即代表閣下確認閣下已向乘車人提供本聲明的副本，而乘車人已閱讀並同意載列其中的所有條款，以及閣下獲乘車人授權向我們提供所有該等個人資料。","有效身份證明文件指港澳居民來往內地通行證、台灣居民來往大陸通行證、中華人民共和國居民身份證、中華人民共和國港澳居民居住證、中華人民共和國台灣居民居住證、中華人民共和國外國人永久居留身份證、中華人民共和國往來港澳通行證、符合中華人民共和國規定可使用的有效護照或港鐵公司接受的其他有效身份證明文件。閣下所提供的乘車人個人資料將會轉移至香港境外，交予在中國內地的高鐵運營商 (下稱「內地铁路運營商」) 及/或代表內地铁路運營商處理個人資料的代理人、承辦商、業務夥伴或第三方服務供應商，用以實行該目的。由於內地铁路運營商位於中國內地，受中華人民共和國法律約束，因此內地铁路運營商會根據中華人民共和國法律使用及披露閣下的個人資料，而其保障程度可能與香港個人資料私隱法律之下不同。在我們處理閣下的購票交易前，閣下必須同意或獲乘車人授權同意我們將閣下的乘車人個人資料轉移至香港境外的鐵路運營商。為該目的，我們亦可能將閣下所提供的乘車人個人資料轉移給我們提供行政、電腦及其他服務並代表我們按照該目的處理個人資料的代理人、承辦商、業務夥伴或第三方服務供應商 (下稱「服務供應商」)，以及其他獲法例授權而要求取得有關資料的人士。我們的服務供應商可能位於沒有與《個人資料 (私隱) 條例》大致相似或用途相同的資料保護法律的香港境外的地方。根據《個人資料 (私隱) 條例》，乘車人有權要求查閱及更正閣下所提供的乘車人個人資料。更正乘車人個人資料的申請，可向香港西九龍站詢問處提出。倘須查閱乘車人個人資料，可致函予以下人士及地址：個人資料私隱主任，香港鐵路有限公司，法律－常務部，香港九龍九龍灣德福廣場港鐵總部大樓 (註明：「高速鐵路」)。"];
-function pdpa(p){setBar(bb('back'));go(`
- <div class="pdwrap"><div class="pdpa"><span class="pnum">${p}/3</span>
-  <h3>收集個人資料聲明 （下稱「聲明」）</h3><p>${PDPA[p-1]}</p></div>
-  <span class="side" onclick="pdpa(${Math.min(3,p+1)})">下一頁</span></div>
- <div class="pdbtns"><button class="btn" style="margin-right:40px" onclick="home()">不接受</button><button class="btn orange" onclick="s1()">接受</button></div>`);}
+const PDPA=["閣下所提供的乘車人個人資料將被香港鐵路有限公司用於處理購票交易、核實身份、管理營運高鐵服務等用途。","閣下必須向我們提供乘車人的行程資料、付款資料、有效身份證明文件等個人資料。","根據《個人資料(私隱)條例》，乘車人有權要求查閱及更正個人資料。"];
+function pdpa(p){setBar(bb('back'));go(`<div class="pdwrap"><div class="pdpa"><span class="pnum">${p}/3</span><h3>收集個人資料聲明</h3><p>${PDPA[p-1]}</p></div><span class="side" onclick="pdpa(${Math.min(3,p+1)})">下一頁</span></div><div class="pdbtns"><button class="btn" style="margin-right:40px" onclick="home()">不接受</button><button class="btn orange" onclick="s1()">接受</button></div>`);}
 function s1(){S.step=1;S.dir=S.dir||'out';S.main=S.main||'福田';S.field=S.field||'to';S.sp=S.sp||0;
- const today=fmt(new Date());if(!S.date||S.date<today||dayIdx(S.date)>14)S.date=today;
+ const todayStr=fmt(new Date());if(!S.date||S.date<todayStr||dayIdx(S.date)>14)S.date=todayStr;
  setBar(bb('back'));
  const dep=S.dir=='out'?'香港西九龍':S.main,arr=S.dir=='out'?S.main:'香港西九龍';
  const gridSel=S.field=='from'?dep:arr;
@@ -530,21 +482,88 @@ function pickSt(s){
  if(S.field=='from'){if(s=='香港西九龍'){S.dir='out';}else{S.main=s;S.dir='in';}}
  else{if(s=='香港西九龍'){S.dir='in';}else{S.main=s;S.dir='out';}}
  s1();}
-function pickDate(){S.step='date';setBar(bb('back'));
- go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px"><p style="margin:20px;font-size:22px">選擇15天內出發的日子：</p>
- <div class="sgrid" style="padding-top:10px">${day15().map(d=>`<div class="st ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';s1()">${fmt(d).slice(5).replace('-','/')}</div>`).join('')}</div></div>`);}
+
+// 日历视图
+let calYear, calMonth;
+function initCal(){
+  const now=new Date();
+  calYear=now.getFullYear();
+  calMonth=now.getMonth();
+}
+initCal();
+
+function pickDate(){
+  S.step='date';
+  setBar(bb('back'));
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const now=new Date();now.setHours(0,0,0,0);
+  const maxD=new Date(now.getTime()+14*86400000);
+  
+  // 检查15天是否跨月
+  const startMonth=now.getMonth();
+  const endMonth=maxD.getMonth();
+  const crossMonth=startMonth!==endMonth;
+  
+  const year=calYear;
+  const month=calMonth;
+  const firstDay=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0);
+  const daysInMonth=lastDay.getDate();
+  const startWeekday=firstDay.getDay(); // 0=Sun
+  
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const weekDays=['日','一','二','三','四','五','六'];
+  
+  let daysHTML='';
+  // 空白填充
+  for(let i=0;i<startWeekday;i++){
+    daysHTML+=`<div class="cal-day empty"></div>`;
+  }
+  
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(year,month,d);
+    const dateStr=fmt(date);
+    const isPast=date<now;
+    const isFuture=date>maxD;
+    const disabled=isPast||isFuture;
+    const sel=S.date===dateStr?'sel':'';
+    const cls=disabled?'past':sel;
+    const onclick=disabled?'':`onclick="S.date='${dateStr}';s1()"`;
+    daysHTML+=`<div class="cal-day ${cls}" ${onclick}>${d}${sel?'<small>✓</small>':''}</div>`;
+  }
+  
+  const navHTML=crossMonth?`
+    <div class="cal-nav">
+      <button class="btn mini" onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar()">◀ 上月</button>
+      <button class="btn mini" onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar()">下月 ▶</button>
+    </div>`:'';
+  
+  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:30px">
+    <div class="cal-header">
+      <div class="cal-title">${year}年 ${monthNames[month]}</div>
+      ${navHTML}
+    </div>
+    <div class="cal-weekdays">${weekDays.map(w=>`<span>${w}</span>`).join('')}</div>
+    <div class="cal-days">${daysHTML}</div>
+    <div style="text-align:center;margin-top:20px">
+      <p style="font-size:16px;color:#666">灰色日期為不可選日期（已過或超出15天預售期）</p>
+    </div>
+  </div>`);
+}
 
 function s2(){S.step=2;
- if(S.cw==null||S.cw===undefined){const i=dayIdx(S.date);S.cw=Math.min(11,Math.max(0,Math.floor(i/4)*4));}
- if(S.cw<0)S.cw=0;if(S.cw>11)S.cw=11;
  S.trains=trainsFor(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');
  const per=5,tpages=Math.max(1,Math.ceil(S.trains.length/per));
  if(S.tp==null||S.tp===undefined)S.tp=0;
  if(S.tp>tpages-1)S.tp=tpages-1;if(S.tp<0)S.tp=0;
  const rows=S.trains.slice(S.tp*per,S.tp*per+per);
  setBar(bb('back'));
- const chips=day15().slice(S.cw,S.cw+4);
- const getAvailClasses=(t)=>CLASSES.filter(c=>hasClassForTrain(t.no, S.main, c, t.special));
+
+ const getAvailClasses=(t)=>CLASSES.filter(c=>hasClassForTrain(t.no,S.main,c,t.special));
+
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px">
   <div style="position:absolute;top:14px;right:20px;display:flex;gap:12px;align-items:center;z-index:5">
    <button class="btn mini" ${S.tp<=0?'disabled':''} onclick="S.tp--;s2()">車次上一頁</button>
@@ -565,13 +584,12 @@ function s2(){S.step=2;
   }).join('')||'<p style="padding:30px;font-size:24px;text-align:center">該日沒有可選的車次</p>'}
   </div>
   <div style="position:absolute;left:0;right:0;bottom:20px;text-align:center">
-  <button class="btn mini" ${S.cw<=0?'disabled':''} onclick="S.cw=Math.max(0,S.cw-4);S.sel=null;S.tp=0;s2()">日期上一頁</button>
-  ${chips.map((d,i)=>`<span class="chip ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';S.sel=null;S.tp=0;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
-  <button class="btn mini" ${S.cw+4>=15?'disabled':''} onclick="S.cw=Math.min(11,S.cw+4);S.sel=null;S.tp=0;s2()">日期下一頁</button></div></div>`);}
+   <button class="btn" onclick="pickDate()">重新選擇日期</button>
+  </div></div>`);}
 
 function s2b(){S.step=3;S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
  const t=S.trains[S.sel];
- const avail=CLASSES.filter(c=>hasClassForTrain(t.no, S.main, c, t.special));
+ const avail=CLASSES.filter(c=>hasClassForTrain(t.no,S.main,c,t.special));
  if(!avail.includes(S.cls))S.cls=avail[0]||'二等座';
  const classBtns=avail.map(c=>`<div class="cls ${S.cls==c?'sel':''}" onclick="S.cls='${c}';s2b()">${c} <small>(HK$ ${fareFor(S.main,c,false,t.special).toFixed(2)})</small></div>`).join('');
  go(`<div class="panel" style="left:30px;top:40px;width:1380px;height:780px">
@@ -598,19 +616,11 @@ function sumBase(){const t=S.trains[S.sel],T=totals();
    <div class="lb">應付金額</div><div class="pbox">HK$ ${T.total.toFixed(2)}</div>
    <div style="text-align:right;margin-top:20px"><button class="btn" onclick="sum('pay')">付款</button></div></div>`;}
 function sum(modal){setBar(bb('cancel'));let m='';
- if(modal=='id')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">請選擇證件</p>
-  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';sum('scan')"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div>
-  <div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
+ if(modal=='id')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">請選擇證件</p><div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';sum('scan')"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div><div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
  if(modal=='scan')m=`<div class="modal"><div class="mbox"><p style="font-size:24px;margin-bottom:24px">請於相關閱讀器掃瞄證件/刷卡</p><div style="text-align:center"><button class="btn" onclick="sum(null)">取消交易</button></div></div></div>`;
- if(modal=='pay')m=`<div class="modal"><div class="mbox"><div class="idg">
-  <button class="idb" onclick="paying('支付寶')"><img class="ic" src="img/pay-alipay.png">支付寶</button>
-  <button class="idb" onclick="paying('微信支付')"><img class="ic" src="img/pay-wechat.png">微信支付</button>
-  <button class="idb" onclick="paying('感應式信用卡')"><img class="ic" src="img/pay-card.png">感應式信用卡</button></div>
-  <div style="text-align:center"><button class="btn" onclick="sum(null)">取消交易</button></div></div></div>`;
+ if(modal=='pay')m=`<div class="modal"><div class="mbox"><div class="idg"><button class="idb" onclick="paying('支付寶')"><img class="ic" src="img/pay-alipay.png">支付寶</button><button class="idb" onclick="paying('微信支付')"><img class="ic" src="img/pay-wechat.png">微信支付</button><button class="idb" onclick="paying('感應式信用卡')"><img class="ic" src="img/pay-card.png">感應式信用卡</button></div><div style="text-align:center"><button class="btn" onclick="sum(null)">取消交易</button></div></div></div>`;
  if(modal=='card')m=`<div class="modal"><div class="mbox"><p style="font-size:24px">如使用感應式信用卡，請放在指定讀卡器（模擬）</p></div></div>`;
- if(modal=='child')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">登記免費乘車小童：請選擇證件</p>
-  <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';sum('childscan')"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div>
-  <div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
+ if(modal=='child')m=`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">登記免費乘車小童：請選擇證件</p><div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';sum('childscan')"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div><div style="text-align:center"><button class="btn" onclick="sum(null)">取消</button></div></div></div>`;
  if(modal=='childscan')m=`<div class="modal"><div class="mbox"><p style="font-size:24px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`;
  go(sumBase()+(!modal?`<div style="position:absolute;left:60px;bottom:40px"><button class="btn" ${((S.kids||[]).length)>=S.adult?'disabled':''} onclick="sum('child')">添加免費乘車兒童</button></div>`:'')+m);
  if(modal=='scan')setTimeout(function(){S.pax.push({id_type:S.paxType,id_no:genId(S.paxType)});S.paxType=null;S.pi++;if(S.pi<S.adult+S.child){sum('id');}else{sum(null);}},2500);
@@ -631,35 +641,14 @@ async function printing(){const t=S.trains[S.sel],T=totals();
  home();}
 function recollect(){setBar(bb('back'));S.pick=S.pick||{};const a=getO().slice().reverse().slice(0,8);
  const ids=Object.keys(S.pick).filter(k=>S.pick[k]);
- go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px">
- <p style="margin:10px;font-size:22px">請選擇要領取的訂單（可多選；開車前可重複領取，每單只限印發兩次；不會列印收據）</p>
- ${a.map(o=>{const ok=o.slipPrints<2&&new Date(o.dep_dt)>new Date();const on=!!S.pick[o.id];
-  return `<button class="btn" style="display:block;width:100%;margin:10px 0;${on?'background:#f08c1e':''}" ${ok?'':'disabled'} onclick="togPick(${o.id})">${on?'✔ ':''}${o.no}　${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`;}).join('')||'<p style="margin:14px">沒有訂單</p>'}
- ${ids.length?`<button class="btn orange" style="margin-top:16px" onclick="startQueue()">確認列印（${ids.length}張）</button>`:''}
- </div>`);}
+ go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:10px;font-size:22px">請選擇要領取的訂單</p>${a.map(o=>{const ok=o.slipPrints<2&&new Date(o.dep_dt)>new Date();const on=!!S.pick[o.id];return `<button class="btn" style="display:block;width:100%;margin:10px 0;${on?'background:#f08c1e':''}" ${ok?'':'disabled'} onclick="togPick(${o.id})">${on?'✔ ':''}${o.no} ${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`;}).join('')||'<p style="margin:14px">沒有訂單</p>'}${ids.length?`<button class="btn orange" style="margin-top:16px" onclick="startQueue()">確認列印（${ids.length}張）</button>`:''}</div>`);}
 function togPick(id){S.pick[id]=!S.pick[id];recollect();}
-async function startQueue(){const ids=Object.keys(S.pick).filter(k=>S.pick[k]).map(Number);S.pick={};
- for(let i=0;i<ids.length;i++){const o=getO().find(x=>x.id===ids[i]);if(!o)continue;
-  go(printModalHTML(ids.length,i+1,ids.length-i-1));
-  await slipPrintRaw();o.slipPrints++;saveO(o);
-  await wait(4000);}
- recollect();}
+async function startQueue(){const ids=Object.keys(S.pick).filter(k=>S.pick[k]).map(Number);S.pick={};for(let i=0;i<ids.length;i++){const o=getO().find(x=>x.id===ids[i]);if(!o)continue;go(printModalHTML(ids.length,i+1,ids.length-i-1));await slipPrintRaw();o.slipPrints++;saveO(o);await wait(4000);}recollect();}
 function childFlow(){const os=getO().slice().reverse().slice(0,8);setBar(bb('back'));
  if(!S.cf){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">無論於任何購票途徑購票時，如未有登記同行免費乘車小童，亦可於售票機後補登記手續</p><button class="btn" onclick="S.cf=1;childFlow()">添加</button></div>`);return;}
- if(!S.cfOrder){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">步驟一：選擇同行成人車票</p>
-  ${os.map(o=>`<button class="btn" style="display:block;width:100%;margin:10px 0" onclick="S.cfOrder=${o.id};S.paxType=null;S.cfScan1=0;S.cfScan2=0;S.kidType=null;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}</div>`);return;}
- if(!S.cfScan1){
-  if(!S.paxType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">選擇同行成人購票時的證件類別</p>
-   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';childFlow()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);return;}
-  setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:24px">請於相關閱讀器掃瞄證件/刷卡（模擬）</p></div></div>`);
-  setTimeout(function(){S.cfScan1=1;S.paxType=null;childFlow();},2500);return;}
- if(!S.cfScan2){
-  if(!S.kidType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">步驟二：登記同行小童證件</p>
-   <div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';childFlow()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);return;}
-  setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:24px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`);
-  setTimeout(function(){const o=getO().find(x=>x.id===S.cfOrder);
-   if(o.free_children.length>=o.qty){S.kidType=null;notice('每位18歲或以上的旅客只可登記一位免費乘車小童');return;}
-   o.free_children.push({id_type:S.kidType,id_no:genId(S.kidType)});saveO(o);S.kidType=null;S.cfScan2=1;childFlow();},2500);return;}
+ if(!S.cfOrder){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">步驟一：選擇同行成人車票</p>${os.map(o=>`<button class="btn" style="display:block;width:100%;margin:10px 0" onclick="S.cfOrder=${o.id};S.paxType=null;S.cfScan1=0;S.cfScan2=0;S.kidType=null;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}</div>`);return;}
+ if(!S.cfScan1){if(!S.paxType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">選擇同行成人購票時的證件類別</p><div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.paxType='${t}';childFlow()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);return;}setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:24px">請於相關閱讀器掃瞄證件/刷卡（模擬）</p></div></div>`);setTimeout(function(){S.cfScan1=1;S.paxType=null;childFlow();},2500);return;}
+ if(!S.cfScan2){if(!S.kidType){setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">步驟二：登記同行小童證件</p><div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.kidType='${t}';childFlow()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);return;}setBar(bb('cancel'));go(`<div class="modal"><div class="mbox"><p style="font-size:24px">請跟隨指示掃瞄小童的證件（模擬）</p></div></div>`);setTimeout(function(){const o=getO().find(x=>x.id===S.cfOrder);if(o.free_children.length>=o.qty){S.kidType=null;notice('每位18歲或以上的旅客只可登記一位免費乘車小童');return;}o.free_children.push({id_type:S.kidType,id_no:genId(S.kidType)});saveO(o);S.kidType=null;S.cfScan2=1;childFlow();},2500);return;}
  setBar(bb('back'));go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:24px">步驟三：完成添加<br>完成程序後請取回證件</p><button class="btn" onclick="home()">確定</button></div>`);}
 home();
 </script>
