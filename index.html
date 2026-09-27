@@ -16,10 +16,11 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 #app{flex:1;position:relative;overflow:hidden}
 .ic{width:64px;height:64px;object-fit:contain}
 .hgrid{position:absolute;inset:0;padding:70px 80px;display:grid;grid-template-columns:95fr 70fr 93fr 92fr;grid-template-rows:300px 300px 1fr;gap:24px}
-.hb{border:none;border-radius:10px;color:#fff;font-size:30px;cursor:pointer;display:flex;align-items:center;gap:20px;justify-content:center;background:#3d7ab8}
+.hb{border:none;border-radius:10px;color:#fff;font-size:44px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:26px;justify-content:center;background:#3d7ab8}
+.hb .ic{width:96px;height:96px}
 .hb.green{background:#3fa142}.hb.yellow{background:#e8b40b}
 .hb.tall{flex-direction:column;grid-column:4;grid-row:1/3}
-.lang{grid-column:4;grid-row:3;align-self:end;justify-self:end;width:auto;padding:14px 30px;font-size:22px}
+.lang{grid-column:4;grid-row:3;align-self:end;justify-self:end;width:auto;padding:16px 36px;font-size:24px}
 .pdwrap{position:absolute;left:90px;right:90px;top:45px;height:730px}
 .pdpa{position:absolute;inset:0;background:#f8fafc;padding:50px 80px;font-size:19px;line-height:1.9}
 .pdpa h3{color:#f08c1e;text-align:center;font-size:26px;margin-bottom:20px}
@@ -38,13 +39,14 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .fbox small{display:block;font-size:11px;color:#666}
 .fbox.sel{border-color:#f08c1e;color:#f08c1e;background:#fff8f0}.fbox.sel small{color:#f08c1e}
 .btn{background:#3d7ab8;color:#fff;border:none;border-radius:8px;padding:14px 34px;font-size:22px;cursor:pointer}
-.btn:disabled{opacity:.5}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.orange{background:#f5a623}
 .trow{display:flex;align-items:center;gap:16px;border:2px solid #7aa7d4;border-radius:6px;padding:12px;margin:10px 14px;cursor:pointer;font-size:19px;background:#fff}
 .trow.sel{border-color:#f08c1e;background:#fff7ee}
 .trow .ar{color:#3e75b8;font-size:13px;text-align:center}
 .chip{display:inline-block;border:2px solid #7aa7d4;border-radius:6px;padding:4px 12px;margin:0 5px;text-align:center;cursor:pointer;background:#fff;font-size:13px}
 .chip b{display:block;font-size:24px}
+.chip.sel{border-color:#f08c1e;background:#f08c1e;color:#fff}
 .qty{display:flex;align-items:center;gap:22px;font-size:26px;margin:30px 40px}
 .circ{width:56px;height:56px;border-radius:50%;border:2px solid #3d7ab8;background:#fff;color:#3d7ab8;font-size:30px;cursor:pointer}
 .nbox{border:2px solid #7aa7d4;border-radius:6px;padding:10px 40px;font-size:26px;background:#fff}
@@ -83,6 +85,8 @@ const setBar=h=>{document.getElementById('tbar').innerHTML=h;};
 const bb=l=>`<button class="tb" onclick="${l=='cancel'?'home()':'back()'}">${l=='cancel'?'取消交易':'〈 上一步'}</button><button class="tb" onclick="home()"><img src="img/top-home.png"><span class="two">首頁<br>Home</span></button>`;
 const fmt=d=>d.toISOString().slice(0,10);
 const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+const day15=()=>{const b=new Date();b.setHours(0,0,0,0);const a=[];for(let i=0;i<15;i++){a.push(new Date(b.getTime()+i*86400000));}return a;};
+const dayIdx=d=>Math.round((new Date(d+'T00:00:00')-new Date(new Date().setHours(0,0,0,0)))/86400000);
 function seed(s){let h=1779033703;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296;};}
 function genTrains(date,frm,to){const rnd=seed(date+frm+to),now=new Date(),day=new Date(date+'T00:00:00');
  const dist=Math.max(1,Math.abs(ST.findIndex(x=>x[0]==to)-ST.findIndex(x=>x[0]==frm))),out=[];
@@ -139,7 +143,6 @@ function pdpa(p){setBar(bb('back'));go(`
   <span class="side" onclick="pdpa(${Math.min(3,p+1)})">下一頁</span></div>
  <div class="pdbtns"><button class="btn" style="margin-right:40px" onclick="home()">不接受</button><button class="btn orange" onclick="s1()">接受</button></div>`);}
 
-/* ===== 步驟一：欄位焦點跟隨橙色 ===== */
 function s1(){S.step=1;S.dir=S.dir||'out';S.main=S.main||'福田';S.date=S.date||fmt(new Date());S.field=S.field||'to';setBar(bb('back'));
  const dep=S.dir=='out'?'香港西九龍':S.main,arr=S.dir=='out'?S.main:'香港西九龍';
  const gridSel=S.field=='from'?dep:arr;
@@ -151,17 +154,21 @@ function s1(){S.step=1;S.dir=S.dir||'out';S.main=S.main||'福田';S.date=S.date|
   <div class="lb">到達站</div><div class="fbox ${S.field=='to'?'sel':''}" onclick="S.field='to';s1()">${arr}<small>&nbsp;</small></div>
   <div class="lb">出發日期</div><div class="fbox ${S.field=='date'?'sel':''}" onclick="S.field='date';pickDate()">${S.date}</div>
  </div>
- <button class="btn" style="position:absolute;top:800px;left:720px;width:230px" onclick="s2()">下一步</button>`);}
+ <button class="btn" style="position:absolute;top:800px;left:720px;width:230px" onclick="S.cw=null;S.sel=null;s2()">下一步</button>`);}
 function pickSt(s){
  if(S.field=='from'){if(s=='香港西九龍'){S.dir='out';}else{S.main=s;S.dir='in';}}
  else{if(s=='香港西九龍'){S.dir='in';}else{S.main=s;S.dir='out';}}
  s1();}
-function pickDate(){S.step='date';setBar(bb('back'));const days=[];for(let i=0;i<15;i++){const d=new Date();d.setDate(d.getDate()+i);days.push(fmt(d));}
+function pickDate(){S.step='date';setBar(bb('back'));
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px"><p style="margin:20px;font-size:22px">選擇15天內出發的日子：</p>
- <div class="sgrid" style="padding-top:10px">${days.map(d=>`<div class="st ${S.date==d?'sel':''}" onclick="S.date='${d}';s1()">${d.slice(5).replace('-','/')}</div>`).join('')}</div></div>`);}
+ <div class="sgrid" style="padding-top:10px">${day15().map(d=>`<div class="st ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';s1()">${fmt(d).slice(5).replace('-','/')}</div>`).join('')}</div></div>`);}
 
-function s2(){S.step=2;S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');S.cw=S.cw||0;setBar(bb('back'));
- const chips=[];for(let i=0;i<4;i++){const d=new Date(S.date+'T00:00:00');d.setDate(d.getDate()+S.cw+i);chips.push(d);}
+/* ===== 步驟二：日期籌鎖定15天、下一頁到尾禁用 ===== */
+function s2(){S.step=2;
+ if(S.cw==null||S.cw===undefined){const i=dayIdx(S.date);S.cw=Math.min(11,Math.max(0,Math.floor(i/4)*4));}
+ if(S.cw<0)S.cw=0;if(S.cw>11)S.cw=11;
+ S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');setBar(bb('back'));
+ const chips=day15().slice(S.cw,S.cw+4);
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px">
   ${S.trains.map((t,i)=>`<div class="trow ${S.sel==i?'sel':''}" onclick="S.sel=${i};s2b()">
    <b style="width:100px">${t.no}</b>
@@ -170,8 +177,8 @@ function s2(){S.step=2;S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':
    <span style="width:120px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
    <span style="flex:1;text-align:center">一等座<br>${t.f['一等座'].toFixed(2)}</span>
    <span style="flex:1;text-align:center">二等座<br>${t.f['二等座'].toFixed(2)}</span></div>`).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
-  <div style="text-align:center;margin-top:16px">${chips.map((d,i)=>`<span class="chip" onclick="S.date='${fmt(d)}';S.sel=null;S.cw=0;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
-  <button class="btn" style="padding:10px 26px" onclick="S.cw+=4;s2()">下一頁</button></div></div>`);}
+  <div style="text-align:center;margin-top:16px">${chips.map((d,i)=>`<span class="chip ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';S.sel=null;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
+  <button class="btn" style="padding:10px 26px" ${S.cw+4>=15?'disabled':''} onclick="S.cw+=4;s2()">下一頁</button></div></div>`);}
 
 function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
  const t=S.trains[S.sel];
