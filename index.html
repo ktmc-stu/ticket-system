@@ -16,20 +16,17 @@ html,body{height:100%;overflow:hidden;background:#222}
 #app{flex:1;position:relative;overflow:hidden}
 .ic{width:64px;height:64px;object-fit:contain}
 .ic-s{width:36px;height:36px;object-fit:contain}
-/* 首頁 */
 .hgrid{position:absolute;inset:0;padding:70px 80px;display:grid;grid-template-columns:95fr 70fr 93fr 92fr;grid-template-rows:300px 300px 1fr;gap:24px}
 .hb{border:none;border-radius:10px;color:#fff;font-size:30px;cursor:pointer;display:flex;align-items:center;gap:20px;justify-content:center;background:#3d7ab8}
 .hb.green{background:#3fa142}.hb.yellow{background:#e8b40b}
 .hb.tall{flex-direction:column;grid-column:4;grid-row:1/3}
 .lang{grid-column:4;grid-row:3;align-self:end;justify-self:end;width:auto;padding:14px 30px;font-size:22px}
-/* 聲明 */
 .pdwrap{position:absolute;left:90px;right:90px;top:45px;height:730px}
 .pdpa{position:absolute;inset:0;background:#f8fafc;padding:50px 80px;font-size:19px;line-height:1.9}
 .pdpa h3{color:#f08c1e;text-align:center;font-size:26px;margin-bottom:20px}
 .pnum{position:absolute;right:20px;top:14px;font-size:18px;color:#666}
 .side{position:absolute;right:-16px;top:80px;writing-mode:vertical-lr;background:#3d7ab8;color:#fff;padding:20px 10px;border-radius:8px;cursor:pointer;font-size:20px;letter-spacing:6px}
 .pdbtns{position:absolute;left:0;right:0;bottom:70px;text-align:center}
-/* 通用元件 */
 .panel{background:#fff;border:3px solid #3e75b8;border-radius:8px;position:absolute}
 .tab{position:absolute;top:-3px;left:50px;background:#3e75b8;color:#fff;padding:8px 90px 8px 30px;font-size:20px;border-radius:0 0 14px 0}
 .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:70px 24px 0}
@@ -117,16 +114,23 @@ const receiptHTML=()=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-
 此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
 
+/* ===== 不支援功能頁面：本設備暫不支持XXXX ===== */
+function unsup(t){setBar(bb('back'));go(`
+ <div class="panel" style="left:30px;top:40px;right:30px;height:780px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+  <p style="font-size:36px;color:#333">${t}</p>
+  <button class="btn" style="margin-top:40px" onclick="home()">確定</button>
+ </div>`);}
+function notice(t){go(`<div class="modal"><div class="mbox"><p style="font-size:24px;margin-bottom:24px">${t}</p><button class="btn" onclick="home()">確定</button></div></div>`);}
+
 function home(){S={};setBar('');go(`
  <div class="hgrid">
   <button class="hb green" style="grid-column:1/3" onclick="pdpa(1)"><img class="ic" src="img/btn-buy.png">購買車票</button>
-  <button class="hb" onclick="notice('示範機暫不提供靈活行服務')"><img class="ic" src="img/btn-flex.png">靈活行</button>
-  <button class="hb tall" onclick="notice('購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印')"><img class="ic" src="img/btn-reimburse.png">領取報銷憑證</button>
+  <button class="hb" onclick="unsup('本設備暫不支持辦理靈活行')"><img class="ic" src="img/btn-flex.png">靈活行</button>
+  <button class="hb tall" onclick="unsup('本設備暫不支持打印報銷憑證')"><img class="ic" src="img/btn-reimburse.png">領取報銷憑證</button>
   <button class="hb" onclick="S.cf=0;childFlow()"><img class="ic" src="img/btn-child.png">免費乘車兒童</button>
   <button class="hb yellow" style="grid-column:2/4" onclick="recollect()"><img class="ic" src="img/btn-slip.png">領取行程信息提示</button>
-  <button class="btn lang" onclick="notice('示範版本只提供繁體中文')">繁體/English</button>
+  <button class="btn lang" onclick="unsup('本設備暫不支持切換語言')">繁體/English</button>
  </div>`);}
-function notice(t){go(`<div class="modal"><div class="mbox"><p style="font-size:24px;margin-bottom:24px">${t}</p><button class="btn" onclick="home()">確定</button></div></div>`);}
 function back(){if(S.step==1)home();else if(S.step==2)s1();else if(S.step==3)s2();else home();}
 
 const PDPA=["閣下所提供的個人資料（下稱「資料」）將會被收集及處理，用於處理購票、登記乘車人證件及列印車票相關用途。如未能提供所需資料，本機或無法完成購票程序。","資料將於列車開出後30天內銷毀。閣下可於車站客務中心查閱或更正所提供的資料。證件掃瞄紀錄僅用於核對乘車人身份，不會用於任何其他用途。","如閣下不接受本聲明，將無法於售票機完成購票。詳情可致電客務熱線 852 21200888 或瀏覽 www.mtr.com.hk/highspeed 查詢。"];
