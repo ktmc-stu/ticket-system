@@ -43,9 +43,15 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.orange{background:#FBAC1B}
 .btn.mini{padding:8px 18px;font-size:18px}
-.trow{display:flex;align-items:center;gap:12px;border:2px solid #8FB2DE;border-radius:6px;padding:10px 12px;margin:10px 14px;cursor:pointer;font-size:18px;background:#fff}
+.trow{display:flex;align-items:center;gap:12px;border:2px solid #8FB2DE;border-radius:6px;padding:14px 16px;margin:10px 14px;cursor:pointer;font-size:22px;background:#fff}
 .trow.sel{border-color:#f08c1e;background:#fff7ee}
-.trow .ar{color:#5886C5;font-size:13px;text-align:center}
+.trow .ar{color:#5886C5;font-size:16px;text-align:center}
+.trow .train-no{font-size:26px;font-weight:bold}
+.trow .station-name{font-size:22px}
+.trow .train-time{font-size:22px}
+.trow .duration{font-size:16px;color:#5886C5}
+.trow .class-name{font-size:20px}
+.trow .class-price{font-size:20px}
 .chip{display:inline-block;border:2px solid #8FB2DE;border-radius:6px;padding:4px 12px;margin:0 5px;text-align:center;cursor:pointer;background:#fff;font-size:13px}
 .chip b{display:block;font-size:24px}
 .chip.sel{border-color:#f08c1e;background:#f08c1e;color:#fff}
@@ -121,7 +127,7 @@ const FARE={
 '上海虹橋':[1292,2067,2325,2841,4299, 646,1034,1860,2274,3439],
 '南京南':[1123,1796,2020,2470,3708, 562,899,1617,1976,2966],
 '杭州西':[954,1525,1717,null,3124, 478,763,763,1374,null,2499],
-'上饒':[800,1280,1440,null,2400, 400,640,720,null,1200],
+'上':[800,1280,1440,null,2400, 400,640,720,null,1200],
 '成都東':[1019,1631,1835,2242,3096, 510,815,815,1469,1794,2477],
 '重慶西':[862,1376,1551,null,2810, 431,688,688,1241,null,2248],
 '福州':[587,939,1058,null,2015, 294,470,470,847,null,1612],
@@ -155,22 +161,14 @@ function hasClass(st,cls,special){
  return fareFor(st,cls,false,special)!==null;
 }
 
-// 判断车次是否提供某座位等级
 function hasClassForTrain(no, st, cls, special) {
-  // 首先检查站点票价是否存在
   if (!hasClass(st, cls, special)) return false;
-  
-  // 然后检查车次是否提供该座位
-  // 根据票价表注释：特等、優選一等、商務座只设于部分内地列车
   if (cls === '商務座') {
-    // 商務座：G3xx、G9xx、G60xx、G61xx
     return /^G(3|9)\d/.test(no) || no.indexOf('G60') === 0 || no.indexOf('G61') === 0;
   }
   if (cls === '特等座' || cls === '優選一等座') {
-    // 特等、優選一等：G3xx、G9xx
     return /^G(3|9)\d/.test(no);
   }
-  // 二等座、一等座：所有车次都提供
   return true;
 }
 
@@ -351,7 +349,6 @@ function s2(){S.step=2;
  setBar(bb('back'));
  const chips=day15().slice(S.cw,S.cw+4);
 
- // 获取该车次提供的座位等级（同时检查站点和车次）
  const getAvailClasses=(t)=>CLASSES.filter(c=>hasClassForTrain(t.no, S.main, c, t.special));
 
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px">
@@ -363,12 +360,12 @@ function s2(){S.step=2;
   <div style="position:absolute;left:0;right:0;top:70px;bottom:110px;overflow:hidden">
   ${rows.map((t,i)=>{
    const avail=getAvailClasses(t);
-   const classCols=avail.map(c=>`<span style="flex:1;text-align:center;font-size:13px">${c.replace('座','')}<br>${fareFor(S.main,c,false,t.special).toFixed(2)}</span>`).join('');
+   const classCols=avail.map(c=>`<span style="flex:1;text-align:center"><span class="class-name">${c.replace('座','')}</span><br><span class="class-price">${fareFor(S.main,c,false,t.special).toFixed(2)}</span></span>`).join('');
    return `<div class="trow ${S.sel==S.tp*per+i?'sel':''}" onclick="S.sel=${S.tp*per+i};s2b()">
-    <b style="width:75px">${t.no}</b>
-    <span style="width:110px">${S.dir=='out'?'香港西九龍':S.main}<br>${t.dep}</span>
-    <span class="ar"><br>${t.dur}分鐘</span>
-    <span style="width:95px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
+    <span class="train-no" style="width:90px">${t.no}</span>
+    <span style="width:140px"><span class="station-name">${S.dir=='out'?'香港西九龍':S.main}</span><br><span class="train-time">${t.dep}</span></span>
+    <span class="ar"><span class="duration">${t.dur}分鐘</span><br>⟶</span>
+    <span style="width:120px"><span class="station-name">${S.dir=='out'?S.main:'香港西九龍'}</span><br><span class="train-time">${t.arr}</span></span>
     ${classCols}
    </div>`;
   }).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
@@ -381,7 +378,6 @@ function s2(){S.step=2;
 function s2b(){S.step=3;S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
  const t=S.trains[S.sel];
  const avail=CLASSES.filter(c=>hasClassForTrain(t.no, S.main, c, t.special));
- // 如果当前选择的座位不可用，默认选第一个可用的
  if(!avail.includes(S.cls))S.cls=avail[0]||'二等座';
 
  const classBtns=avail.map(c=>
