@@ -55,6 +55,8 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .cls{background:#fff;border:2px solid #8FB2DE;border-radius:6px;padding:16px;margin:14px 0;cursor:pointer;font-size:22px;text-align:center}
 .cls small{font-size:13px;color:#666}
 .cls.sel{border-color:#f08c1e;color:#f08c1e}.cls.sel small{color:#f08c1e}
+.cls.dis{opacity:0.4;cursor:not-allowed;background:#ddd;border-color:#aaa;color:#888}
+.cls.dis small{color:#888}
 .red{color:#e33;font-size:18px}
 .modal{position:absolute;inset:0;background:rgba(120,120,120,.55);display:flex;align-items:center;justify-content:center;z-index:50}
 .mbox{background:#fff;border-radius:10px;padding:34px;min-width:560px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
@@ -87,22 +89,28 @@ function getIdIcon(t){
  if(t.includes('護照'))return 'img/id-passport.png';
  return 'img/id-card.png';
 }
-const SP1=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上饒","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
+const SP1=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
 const SP2=[["武漢","Wuhan"],["長沙南","Changshanan"],["成都東","Chengdudong"],["重慶西","Chongqingxi"],["福州","Fuzhou"],["昆明南","Kunmingnan"],["梅州西","Meizhouxi"],["南寧東","Nanningdong"],["廈門","Xiamen"],["西安北","Xi'anbei"],["湛江西","Zhanjiangxi"],["張家界西","Zhangjiajiexi"],["肇慶東","Zhaoqingdong"],["杭州西","Hangzhouxi"],["南京南","Nanjingnan"],["潮汕","Chaoshan"],["東莞南","Dongguannan"],["廣州新塘","Guangzhouxintang"],["南沙北","Nanshabei"],["清遠","Qingyuan"]];
 const ST=SP1.concat(SP2);
 const FARE={
-'福田':[79,126,236,39,64,189],'深圳北':[87,139,261,44,69,209],'光明城':[110,176,328,56,88,263],'虎門':[206,330,616,103,165,493],
-'南沙北':[214,342,642,108,171,513],'廣州南':[249,398,746,125,199,597],'東莞南':[128,206,385,65,103,308],'常平':[153,245,460,76,123,368],
-'東莞':[176,281,527,88,141,422],'廣州新塘':[214,342,642,108,171,513],'廣州東':[249,398,746,125,199,597],'慶盛':[214,342,642,108,171,513],
-'東莞東':[153,245,460,76,123,368],'三水南':[275,439,823,138,220,659],'清遠':[296,474,894,148,237,715],'肇慶東':[295,472,909,148,236,727],
-'汕尾':[243,389,808,121,194,646],'汕頭':[377,605,1280,189,303,1025],'潮汕':[319,511,1076,160,256,860],'梅州西':[317,508,1070,158,254,856],
-'長沙南':[685,1096,2121,342,548,1697],'武漢':[888,1421,2760,444,711,2209],'北京西':[1443,2119,4093,722,1059,3274],'石家莊':[1337,2000,3893,668,1000,3114],
-'天津西':[1361,2179,4238,680,1089,3391],'白洋淀':[1315,2107,4102,658,1054,3282],'上海虹橋':[1292,2067,4299,646,1034,3439],'南京南':[1123,1796,3708,562,899,2966],
-'杭州西':[954,1525,3124,478,763,2499],'上饒':[800,1280,2400,400,640,1900],'成都東':[1019,1631,3096,510,815,2477],'重慶西':[862,1376,2810,431,688,2248],
-'福州':[587,939,2015,294,470,1612],'廈門':[431,689,1468,216,345,1174],'西安北':[1188,1901,3716,594,951,2972],'昆明南':[1037,1660,3509,519,830,2807],
-'南寧東':[538,860,1606,269,430,1285],'湛江西':[549,865,1642,275,433,1314],'張家界西':[873,1395,2735,437,697,2188]};
-function fareFor(st,cls,child){const f=FARE[st]||[249,398,746,125,199,597];return f[(cls=='一等座'?1:(cls=='商務座'?2:0))+(child?3:0)];}
+'福田':[79,126,150,140,236,39,64,75,70,189],'深圳北':[87,139,165,155,261,44,69,83,78,209],'光明城':[110,176,210,195,328,56,88,105,98,263],'虎門':[206,330,390,365,616,103,165,195,183,493],
+'南沙北':[214,342,405,380,642,108,171,203,190,513],'廣州南':[249,398,470,440,746,125,199,235,220,597],'東莞南':[128,206,245,230,385,65,103,123,115,308],'常平':[153,245,290,270,460,76,123,145,135,368],
+'東莞':[176,281,335,315,527,88,141,168,158,422],'廣州新塘':[214,342,405,380,642,108,171,203,190,513],'廣州東':[249,398,470,440,746,125,199,235,220,597],'慶盛':[214,342,405,380,642,108,171,203,190,513],
+'東莞東':[153,245,290,270,460,76,123,145,135,368],'三水南':[275,439,520,485,823,138,220,260,243,659],'清遠':[296,474,560,525,894,148,237,280,263,715],'肇慶東':[295,472,560,525,909,148,236,280,263,727],
+'汕尾':[243,389,460,430,808,121,194,230,215,646],'汕頭':[377,605,720,670,1280,189,303,360,335,1025],'潮汕':[319,511,605,565,1076,160,256,303,283,860],'梅州西':[317,508,605,565,1070,158,254,303,283,856],
+'長沙南':[685,1096,1300,1220,2121,342,548,650,610,1697],'武漢':[888,1421,1685,1580,2760,444,711,843,790,2209],'北京西':[1443,2119,2515,2360,4093,722,1059,1258,1180,3274],'石家莊':[1337,2000,2375,2230,3893,668,1000,1188,1115,3114],
+'天津西':[1361,2179,2585,2425,4238,680,1089,1293,1213,3391],'白洋淀':[1315,2107,2500,2345,4102,658,1054,1250,1173,3282],'上海虹橋':[1292,2067,2455,2300,4299,646,1034,1228,1150,3439],'南京南':[1123,1796,2130,2000,3708,562,899,1065,1000,2966],
+'杭州西':[954,1525,1810,1700,3124,478,763,905,850,2499],'上饒':[800,1280,1520,1430,2400,400,640,760,715,1900],'成都東':[1019,1631,1935,1820,3096,510,815,968,910,2477],'重慶西':[862,1376,1635,1540,2810,431,688,818,770,2248],
+'福州':[587,939,1115,1045,2015,294,470,558,523,1612],'廈門':[431,689,820,770,1468,216,345,410,385,1174],'西安北':[1188,1901,2255,2120,3716,594,951,1128,1060,2972],'昆明南':[1037,1660,1970,1850,3509,519,830,985,925,2807],
+'南寧東':[538,860,1020,960,1606,269,430,510,480,1285],'湛江西':[549,865,1025,965,1642,275,433,513,483,1314],'張家界西':[873,1395,1655,1555,2735,437,697,828,778,2188]};
+function fareFor(st,cls,child){
+ const f=FARE[st]||[249,398,470,440,746,125,199,235,220,597];
+ const idx={'二等座':0,'一等座':1,'特等座':2,'優選一等座':3,'商務座':4};
+ const base=idx[cls]||0;
+ return f[base+(child?5:0)];
+}
 const hasBiz=no=>/^G(3|9)\d/.test(no)||no.indexOf('G60')==0||no.indexOf('G61')==0;
+const hasPremium=no=>/^G(3|9)\d/.test(no);
 const TT=[
 {n:'G5624',t:{'香港西九龍':'07:21','福田':'07:35'}},
 {n:'G388',t:{'香港西九龍':'07:20','福田':'07:34','深圳北':'07:44','虎門':'08:08','廣州南':'08:27','長沙南':'10:45','武漢':'12:08'}},
@@ -288,29 +296,37 @@ function s2(){S.step=2;
   </div>
   <div style="position:absolute;left:0;right:0;top:70px;bottom:110px;overflow:hidden">
   ${rows.map((t,i)=>`<div class="trow ${S.sel==S.tp*per+i?'sel':''}" onclick="S.sel=${S.tp*per+i};s2b()">
-   <b style="width:110px">${t.no}</b>
-   <span style="width:150px">${S.dir=='out'?'香港西九龍':S.main}<br>${t.dep}</span>
-   <span class="ar">⟶<br>${t.dur}分鐘</span>
-   <span style="width:120px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
-   <span style="flex:1;text-align:center">一等座<br>${fareFor(S.main,'一等座',false).toFixed(2)}</span>
-   <span style="flex:1;text-align:center">二等座<br>${fareFor(S.main,'二等座',false).toFixed(2)}</span></div>`).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
+   <b style="width:80px">${t.no}</b>
+   <span style="width:120px">${S.dir=='out'?'香港西九龍':S.main}<br>${t.dep}</span>
+   <span class="ar"><br>${t.dur}分鐘</span>
+   <span style="width:100px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
+   <span style="flex:1;text-align:center;font-size:14px">二等<br>${fareFor(S.main,'二等座',false).toFixed(2)}</span>
+   <span style="flex:1;text-align:center;font-size:14px">一等<br>${fareFor(S.main,'一等座',false).toFixed(2)}</span>
+   <span style="flex:1;text-align:center;font-size:14px">特等<br>${fareFor(S.main,'特等座',false).toFixed(2)}</span>
+   <span style="flex:1;text-align:center;font-size:14px">優選一等<br>${fareFor(S.main,'優選一等座',false).toFixed(2)}</span>
+   <span style="flex:1;text-align:center;font-size:14px">商務<br>${fareFor(S.main,'商務座',false).toFixed(2)}</span></div>`).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
   </div>
   <div style="position:absolute;left:0;right:0;bottom:20px;text-align:center">
   <button class="btn mini" ${S.cw<=0?'disabled':''} onclick="S.cw=Math.max(0,S.cw-4);S.sel=null;S.tp=0;s2()">日期上一頁</button>
   ${chips.map((d,i)=>`<span class="chip ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';S.sel=null;S.tp=0;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
   <button class="btn mini" ${S.cw+4>=15?'disabled':''} onclick="S.cw=Math.min(11,S.cw+4);S.sel=null;S.tp=0;s2()">日期下一頁</button></div></div>`);}
 function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
- const t=S.trains[S.sel],biz=hasBiz(t.no);
+ const t=S.trains[S.sel],biz=hasBiz(t.no),prem=hasPremium(t.no);
  if(S.cls=='商務座'&&!biz)S.cls='二等座';
+ if((S.cls=='特等座'||S.cls=='優選一等座')&&!prem)S.cls='二等座';
+ const bizDis=!biz?'dis':'';
+ const premDis=!prem?'dis':'';
  go(`<div class="panel" style="left:30px;top:40px;width:1380px;height:780px">
   <p class="red" style="text-align:center;margin:20px">如您要購買多於9張車票，請往購票處購買</p>
   <div class="qty">成人票 <button class="circ" onclick="S.adult=Math.max(1,S.adult-1);s2b()">−</button><span class="nbox">${S.adult}</span><button class="circ" onclick="if(S.adult+S.child<9)S.adult++;s2b()">＋</button></div>
   <div class="qty">小童票 ${S.child>0?'<button class="circ" onclick="S.child=Math.max(0,S.child-1);s2b()">−</button>':''}<span class="nbox">${S.child}</span><button class="circ" onclick="if(S.adult+S.child<9)S.child++;s2b()">＋</button></div>
  </div>
  <div class="rcol" style="right:40px;top:40px;width:300px">
-  <div class="cls ${S.cls=='一等座'?'sel':''}" onclick="S.cls='一等座';s2b()">一等座 <small>(HK$ ${fareFor(S.main,'一等座',false).toFixed(2)})</small></div>
   <div class="cls ${S.cls=='二等座'?'sel':''}" onclick="S.cls='二等座';s2b()">二等座 <small>(HK$ ${fareFor(S.main,'二等座',false).toFixed(2)})</small></div>
-  <div class="cls ${S.cls=='商務座'?'sel':''}" onclick="S.cls='商務座';s2b()">商務座 <small>(HK$ ${fareFor(S.main,'商務座',false).toFixed(2)})</small></div>
+  <div class="cls ${S.cls=='一等座'?'sel':''}" onclick="S.cls='一等座';s2b()">一等座 <small>(HK$ ${fareFor(S.main,'一等座',false).toFixed(2)})</small></div>
+  <div class="cls ${S.cls=='特等座'?'sel':''} ${premDis}" ${prem?`onclick="S.cls='特等座';s2b()"`:''}>特等座 <small>(HK$ ${fareFor(S.main,'特等座',false).toFixed(2)})</small></div>
+  <div class="cls ${S.cls=='優選一等座'?'sel':''} ${premDis}" ${prem?`onclick="S.cls='優選一等座';s2b()"`:''}>優選一等座 <small>(HK$ ${fareFor(S.main,'優選一等座',false).toFixed(2)})</small></div>
+  <div class="cls ${S.cls=='商務座'?'sel':''} ${bizDis}" ${biz?`onclick="S.cls='商務座';s2b()"`:''}>商務座 <small>(HK$ ${fareFor(S.main,'商務座',false).toFixed(2)})</small></div>
   <p style="text-align:right;margin:24px 0 10px;font-size:20px">車票總數：${S.adult+S.child}張</p>
   <button class="btn" style="width:100%" onclick="startReg()">下一步</button>
  </div>`);}
