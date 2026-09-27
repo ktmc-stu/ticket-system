@@ -61,8 +61,6 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .idb img{display:block;margin:0 auto 10px}
 .suml{border:2px solid #8FB2DE;border-radius:6px;padding:16px;background:#fff;font-size:20px}
 .pbox{border:2px solid #8FB2DE;border-radius:6px;padding:10px 18px;background:#fff;font-size:20px;margin:10px 0;text-align:right}
-#printArea{display:none}
-@media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}@page{size:80mm 210mm;margin:0}}
 </style>
 </head>
 <body>
@@ -71,16 +69,30 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
  <div id="app"></div>
  <div class="bar"></div>
 </div></div>
-<div id="printArea"></div>
 <script>
 function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);document.getElementById('stage').style.transform='scale('+s+')';}
 window.onresize=fit;fit();
 document.addEventListener('error',function(e){if(e.target&&e.target.tagName=='IMG')e.target.style.display='none';},true);
-/* ===== 車站（兩頁） ===== */
+
+/* ===== 真實票價 (HKD) [二等座, 一等座] ===== */
+const FARES = {
+  '福田':[78,124],'深圳北':[98,157],'光明城':[113,181],'虎門':[179,251],'慶盛':[179,251],
+  '廣州南':[216,302],'廣州東':[216,302],'廣州新塘':[186,260],'東莞南':[186,260],'常平':[179,251],
+  '東莞':[179,251],'南沙北':[186,260],'肇慶東':[338,527],'開平南':[338,527],'潮汕':[430,688],
+  '汕尾':[251,402],'汕頭':[430,688],'廈門':[587,939],'福州':[759,1213],'長沙南':[587,939],
+  '武漢':[759,1213],'北京西':[1179,1886],'上海虹橋':[1179,1886],'杭州西':[1037,1660],'南京南':[1179,1886],
+  '昆明南':[1037,1660],'成都東':[1037,1660],'重慶西':[1037,1660],'西安北':[1315,2107],'南寧東':[759,1213],
+  '梅州西':[430,688],'張家界西':[1037,1660],'石家莊':[1037,1660],'天津西':[1179,1886],'白洋淀':[1315,2107],
+  '上饒':[939,1503],'三水南':[264,422],'樂昌東':[392,627],'遵義':[759,1213]
+};
+function getFare(station, cls){
+  const f = FARES[station] || [300, 480]; // 預設 fallback
+  return cls === '一等座' ? f[1] : f[0];
+}
+
 const SP1=[["香港西九龍","HongKongWestKowloon"],["福田","Futian"],["深圳北","Shenzhenbei"],["光明城","Guangmingcheng"],["虎門","Humen"],["慶盛","Qingsheng"],["東莞東","Dongguandong"],["常平","Changping"],["東莞","Dongguan"],["廣州南","Guangzhounan"],["廣州東","Guangzhoudong"],["三水南","Sanshuinan"],["上海虹橋","Shanghai Hongqiao"],["上饒","Shangrao"],["天津西","Tianjinxi"],["北京西","Beijingxi"],["白洋淀","Baiyangdian"],["石家莊","Shijiazhuang"],["汕尾","Shanwei"],["汕頭","Shantou"]];
 const SP2=[["武漢","Wuhan"],["長沙南","Changshanan"],["成都東","Chengdudong"],["重慶西","Chongqingxi"],["福州","Fuzhou"],["昆明南","Kunmingnan"],["梅州西","Meizhouxi"],["南寧東","Nanningdong"],["廈門","Xiamen"],["西安北","Xi'anbei"],["湛江西","Zhanjiangxi"],["張家界西","Zhangjiajiexi"],["肇慶東","Zhaoqingdong"],["杭州西","Hangzhouxi"],["南京南","Nanjingnan"],["潮汕","Chaoshan"],["東莞南","Dongguannan"],["廣州新塘","Guangzhouxintang"],["南沙北","Nanshabei"],["清遠","Qingyuan"]];
 const ST=SP1.concat(SP2);
-/* ===== 真實時刻表（2026-10-11 版整理） ===== */
 const TT=[
 {n:'G5624',t:{'香港西九龍':'07:21','福田':'07:35'}},
 {n:'G388',t:{'香港西九龍':'07:20','福田':'07:34','深圳北':'07:44','虎門':'08:08','廣州南':'08:27','長沙南':'10:45','武漢':'12:08'}},
@@ -146,38 +158,41 @@ const setBar=h=>{document.getElementById('tbar').innerHTML=h;};
 const bb=l=>`<button class="tb" onclick="${l=='cancel'?'home()':'back()'}">${l=='cancel'?'取消交易':'〈 上一步'}</button><button class="tb" onclick="home()"><img src="img/top-home.png"><span class="two">首頁<br>Home</span></button>`;
 const fmt=d=>d.toISOString().slice(0,10);
 const tm=s=>(+s.slice(0,2))*60+(+s.slice(3,5));
-const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 const day15=()=>{const b=new Date();b.setHours(0,0,0,0);const a=[];for(let i=0;i<15;i++){a.push(new Date(b.getTime()+i*86400000));}return a;};
 const dayIdx=d=>Math.round((new Date(d+'T00:00:00')-new Date(new Date().setHours(0,0,0,0)))/86400000);
+
 function trainsFor(date,frm,to){const now=new Date(),out=[];
  TT.forEach(x=>{if(!x.t[frm]||!x.t[to])return;const a=tm(x.t[frm]),b=tm(x.t[to]);if(b<=a)return;
   const dep=new Date(date+'T00:00:00');dep.setMinutes(a);
   if(dep.toDateString()===now.toDateString()&&(dep-now)<45*60000)return;
-  const dur=b-a,f2=64+dur;
-  out.push({no:x.n,dep:x.t[frm],arr:x.t[to],dur:dur,dt:dep.toISOString(),f:{'一等座':Math.round(f2*1.59),'二等座':f2}});});
+  const dur=b-a;
+  // 獲取真實票價，若目的地不在表中則用起點估算
+  const dest = (frm === '香港西九龍') ? to : frm;
+  const f2 = getFare(dest, '二等座');
+  const f1 = getFare(dest, '一等座');
+  out.push({no:x.n,dep:x.t[frm],arr:x.t[to],dur:dur,dt:dep.toISOString(),f:{'一等座':f1,'二等座':f2}});});
  out.sort((p,q)=>tm(p.dep)-tm(q.dep));return out;}
+
 function genId(t){const R=n=>Math.floor(Math.random()*n);
  if(t.includes('居民身份證')||t.includes('居住證'))return String(R(900000)+100000)+'********'+String(R(9000)+1000);
  if(t.includes('來往內地'))return 'H'+String(R(100000000)).padStart(8,'0');
  if(t.includes('來往大陸'))return String(R(100000000)).padStart(8,'0');
  return 'E'+String(R(100000000)).padStart(8,'0');}
+
 const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
 const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
 function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
-const slipHTML=o=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.5">
-<b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>
-訂單編號：${o.no}<br>列印時間：${new Date().toLocaleString('zh-HK')}<br>
-乘車日期：${o.travel_date}<br>車　　次：${o.train_no}<br>
-出發站：${o.from_station}　${o.dep_time}<br>到達站：${o.to_station}　${o.arr_time}<br>
-車廂等級：${o.coach_class}<br>車票數量：${o.qty} 張<br>總　　額：HKD ${o.total}<hr>
-乘車人證件資料：<br>${o.passengers.map((p,i)=>(i+1)+'. '+p.id_type+'　'+p.id_no).join('<br>')}
-${o.free_children.length?`<br>免費乘車小童：<br>${o.free_children.map((c,i)=>(i+1)+'. '+c.id_type+'　'+c.id_no).join('<br>')}`:''}
-<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
-const receiptHTML=()=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.6">
-<b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>
-茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>
-此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
-const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
+
+/* ===== 呼叫本地 Python 列印橋 ===== */
+async function doPrintAPI(order) {
+  try {
+    await fetch('http://localhost:8000/api/print', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(order)
+    });
+  } catch(e) { console.error('Print API failed', e); }
+}
 
 function unsup(t){setBar(bb('back'));go(`
  <div class="panel" style="left:30px;top:40px;right:30px;height:780px;display:flex;flex-direction:column;align-items:center;justify-content:center">
@@ -238,26 +253,27 @@ function s2(){S.step=2;
    <span style="width:150px">${S.dir=='out'?'香港西九龍':S.main}<br>${t.dep}</span>
    <span class="ar">⟶<br>${t.dur}分鐘</span>
    <span style="width:120px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
-   <span style="flex:1;text-align:center">一等座<br>${t.f['一等座'].toFixed(2)}</span>
-   <span style="flex:1;text-align:center">二等座<br>${t.f['二等座'].toFixed(2)}</span></div>`).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
+   <span style="flex:1;text-align:center">一等座<br>$${t.f['一等座']}</span>
+   <span style="flex:1;text-align:center">二等座<br>$${t.f['二等座']}</span></div>`).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
   <div style="text-align:center;margin-top:16px">${chips.map((d,i)=>`<span class="chip ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';S.sel=null;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
   <button class="btn" style="padding:10px 26px" ${S.cw+4>=15?'disabled':''} onclick="S.cw+=4;s2()">下一頁</button></div></div>`);}
 
 function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
  const t=S.trains[S.sel];
+ const childFare = Math.round(t.f[S.cls] / 2);
  go(`<div class="panel" style="left:30px;top:40px;width:1380px;height:780px">
   <p class="red" style="text-align:center;margin:20px">如您要購買多於9張車票，請往購票處購買</p>
   <div class="qty">成人票 <button class="circ" onclick="S.adult=Math.max(1,S.adult-1);s2b()">−</button><span class="nbox">${S.adult}</span><button class="circ" onclick="if(S.adult+S.child<9)S.adult++;s2b()">＋</button></div>
   <div class="qty">小童票 ${S.child>0?'<button class="circ" onclick="S.child=Math.max(0,S.child-1);s2b()">−</button>':''}<span class="nbox">${S.child}</span><button class="circ" onclick="if(S.adult+S.child<9)S.child++;s2b()">＋</button></div>
  </div>
  <div class="rcol" style="right:40px;top:40px;width:300px">
-  <div class="cls ${S.cls=='一等座'?'sel':''}" onclick="S.cls='一等座';s2b()">一等座 <small>(HK$ ${t.f['一等座'].toFixed(2)})</small></div>
-  <div class="cls ${S.cls=='二等座'?'sel':''}" onclick="S.cls='二等座';s2b()">二等座 <small>(HK$ ${t.f['二等座'].toFixed(2)})</small></div>
+  <div class="cls ${S.cls=='一等座'?'sel':''}" onclick="S.cls='一等座';s2b()">一等座 <small>(HK$ ${t.f['一等座']})</small></div>
+  <div class="cls ${S.cls=='二等座'?'sel':''}" onclick="S.cls='二等座';s2b()">二等座 <small>(HK$ ${t.f['二等座']})</small></div>
   <p style="text-align:right;margin:24px 0 10px;font-size:20px">車票總數：${S.adult+S.child}張</p>
   <button class="btn" style="width:100%" onclick="startReg()">下一步</button>
  </div>`);}
 
-function totals(){const t=S.trains[S.sel],u=t.f[S.cls],cu=Math.round(u*0.5);return {u:u,cu:cu,total:u*S.adult+cu*S.child};}
+function totals(){const t=S.trains[S.sel],u=t.f[S.cls],cu=Math.round(u/2);return {u:u,cu:cu,total:u*S.adult+cu*S.child};}
 function sumBase(){const t=S.trains[S.sel],T=totals();
  return `<div style="position:absolute;left:60px;top:30px;display:flex;align-items:center;gap:30px;font-size:28px">
    <b>${S.dir=='out'?'香港西九龍':S.main}</b>
@@ -305,8 +321,10 @@ function printing(){const t=S.trains[S.sel],T=totals();
   <p style="font-size:24px;margin:14px 0">共列印1張行程信息提示</p>
   <p style="font-size:24px;margin:14px 0">正在為您列印第 <b style="font-size:38px;color:#f08c1e">1</b> 張</p>
   <p style="font-size:24px;margin:14px 0">尚有 0 張未列印</p><div style="text-align:right"><img class="ic" src="img/printer.png"></div></div></div>`);
- doPrint(slipHTML(o));o.slipPrints=1;saveO(o);
- setTimeout(function(){doPrint(receiptHTML());o.receiptPrinted=true;saveO(o);},1500);
+ 
+ // 呼叫本地 Python 列印橋
+ doPrintAPI(o);
+
  setTimeout(function(){home();},4000);}
 
 function recollect(){setBar(bb('back'));const a=getO().slice().reverse().slice(0,8);
@@ -317,7 +335,8 @@ function recollect(){setBar(bb('back'));const a=getO().slice().reverse().slice(0
  </div>`);}
 function reprint(id){const o=getO().find(x=>x.id===id);
  go(`<div class="modal"><div class="mbox"><p style="font-size:24px;margin:14px 0">共列印1張行程信息提示</p><p style="font-size:24px;margin:14px 0">正在為您列印第 <b style="font-size:38px;color:#f08c1e">${o.slipPrints+1}</b> 張</p><p style="font-size:24px;margin:14px 0">尚有 0 張未列印</p></div></div>`);
- doPrint(slipHTML(o));o.slipPrints++;saveO(o);setTimeout(function(){recollect();},2500);}
+ doPrintAPI(o); // 補印也呼叫 Python
+ o.slipPrints++;saveO(o);setTimeout(function(){recollect();},2500);}
 
 function childFlow(){const os=getO().slice().reverse().slice(0,8);setBar(bb('back'));
  if(!S.cf){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">無論於任何購票途徑購票時，如未有登記同行免費乘車小童，亦可於售票機後補登記手續</p><button class="btn" onclick="S.cf=1;childFlow()">添加</button></div>`);return;}
