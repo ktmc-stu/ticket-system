@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<title>香港西九龍站售票機</title>
+<style>
+:root{--green:#007a33;--red:#e4002b;--bg:#f4f6f8}
+*{box-sizing:border-box;user-select:none;font-family:"Microsoft JhengHei",sans-serif}
+body{margin:0;background:var(--bg);display:flex;flex-direction:column;height:100vh}
+header{background:var(--green);color:#fff;padding:14px 24px;display:flex;justify-content:space-between;font-size:22px;font-weight:bold}
+header b{color:#ffe600}
+footer{background:#333;color:#ccc;padding:8px 24px;font-size:14px;display:flex;justify-content:space-between}
+#app{flex:1;overflow:auto;padding:24px;max-width:900px;margin:0 auto;width:100%}
+h2{color:var(--green)}
+.btn{display:block;width:100%;padding:22px;font-size:26px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;margin:12px 0;background:var(--green);color:#fff}
+.btn.gray{background:#888}.btn.red{background:var(--red)}.btn:disabled{background:#ccc;cursor:not-allowed}
+.btn.sel{outline:4px solid #ffe600}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.grid .btn{padding:16px;font-size:20px}
+.box{background:#fff;border-radius:12px;padding:18px;margin:12px 0;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.note{background:#fff8e1;border-left:6px solid #fbc02d;padding:12px;border-radius:6px;margin:10px 0;font-size:17px}
+.tip{background:#e3f2fd;border-left:6px solid #1976d2;padding:12px;border-radius:6px;margin:10px 0;font-size:17px}
+.row{display:flex;justify-content:space-between;align-items:center;background:#fff;border:3px solid #ddd;border-radius:10px;padding:14px 18px;margin:10px 0;cursor:pointer;font-size:20px}
+.row.sel{border-color:var(--green);background:#e8f5e9}
+.stepper{display:flex;align-items:center;gap:18px;font-size:26px}
+.stepper button{font-size:28px;padding:6px 22px;border:none;border-radius:8px;background:var(--green);color:#fff;cursor:pointer}
+.scan{width:80px;height:80px;background:var(--red);border-radius:50%;margin:30px auto;animation:p 1s infinite}
+@keyframes p{50%{transform:scale(1.2);opacity:.6}}
+.small{font-size:15px;color:#666}
+#printArea{display:none}
+@media print{
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  @page{size:80mm 210mm;margin:0}
+}
+</style>
+</head>
+<body>
+<header><span><b>MTR</b> 高速鐵路</span><span>香港西九龍站售票機</span></header>
+<div id="app"></div>
+<footer><span>www.mtr.com.hk</span><span>客務熱線 852 21200888</span></footer>
+<div id="printArea"></div>
+<script>
+const STATIONS=["香港西九龍","福田","深圳北","光明城","東莞南","虎門","慶盛","廣州南"];
+const CLASSES={"二等座":1.0,"一等座":1.6,"商務座":2.5};
+const ID_TYPES=["港澳居民來往內地通行證（回鄉證）","中華人民共和國居民身份證","台胞證","有效護照"];
+const PAY=["感應式信用卡","支付寶","微信支付"];
+let S={},IDLE;
+const $=q=>document.querySelector(q);
+const go=h=>{$('#app').innerHTML=h;clearTimeout(IDLE);IDLE=setTimeout(home,120000);};
+const fmt=d=>d.toISOString().slice(0,10);
+const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+function seed(s){let h=1779033703;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}
+ return()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}}
+function genTrains(date,frm,to){const rnd=seed(date+frm+to),now=new Date(),day=new Date(date+'T00:00:00');
+ const dist=Math.abs(STATIONS.indexOf(to)-STATIONS.indexOf(frm)),out=[];
+ for(let i=0;i<8;i++){const dep=new Date(day.getTime()+(7*60+i*95+Math.floor(rnd()*40))*60000);
+  const arr=new Date(dep.getTime()+(dist*12+8+Math.floor(rnd()*20))*60000);
+  if(dep.toDateString()===now.toDateString()&&(dep-now)<45*60000)continue;
+  const base=75+dist*45,fares={};for(const c in CLASSES)fares[c]=Math.round(base*CLASSES[c]);
+  out.push({train_no:'G'+(6000+Math.floor(rnd()*300)+i),dep_time:hm(dep),arr_time:hm(arr),dep_dt:dep.toISOString(),fares});}
+ return out;}
+function genId(t){const R=n=>Math.floor(Math.random()*n);
+ if(t.includes('回鄉證'))return 'H'+String(R(100000000)).padStart(8,'0');
+ if(t.includes('居民身份證'))return String(R(900000)+100000)+'********'+String(R(9000)+1000;
+ if(t.includes('台胞證'))return String(R(100000000)).padStart(8,'0');
+ return 'E'+String(R(100000000)).padStart(8,'0');}
+const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
+const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
+function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
+
+/* ===== 列印：HTML 1:1 鏡像 Word 母版 ===== */
+const slipHTML=o=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.5">
+<b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>
+訂單編號：${o.no}<br>列印時間：${new Date().toLocaleString('zh-HK')}<br>
+乘車日期：${o.travel_date}<br>車　　次：${o.train_no}<br>
+出發站：${o.from_station}　${o.dep_time}<br>到達站：${o.to_station}　${o.arr_time}<br>
+車廂等級：${o.coach_class}<br>車票數量：${o.qty} 張<br>總　　額：HKD ${o.total}<hr>
+乘車人證件資料：<br>${o.passengers.map((p,i)=>`${i+1}. ${p.id_type}　${p.id_no}`).join('<br>')}
+${o.free_children.length?`<br>免費乘車小童：<br>${o.free_children.map((c,i)=>`${i+1}. ${c.id_type}　${c.id_no}`).join('<br>')}`:''}
+<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
+const receiptHTML=o=>`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.6">
+<b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>
+訂單編號：${o.no}<br>日期：${o.created_at}<br>付款方式：${o.payment_method}<br>
+<b style="font-size:14px">金額：HKD ${o.total}</b><hr>
+此收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
+const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
+function purchasePrints(o){doPrint(slipHTML(o));o.slipPrints=1;saveO(o);
+ setTimeout(()=>{doPrint(receiptHTML(o));o.receiptPrinted=true;saveO(o);},1200);}
+
+/* ===== 畫面流程 ===== */
+function home(){S={};go(`
+ <button class="btn" style="height:30vh;font-size:44px" onclick="pdpa()">購買車票</button>
+ <button class="btn gray" onclick="S.cf=0;childFlow()">免費乘車兒童</button>
+ <button class="btn gray" onclick="recollect()">補領「行程信息提示」</button>
+ <div class="note">售票機只發售以香港西九龍站為出發或目的地的車票。每張訂單最多可購買九張單程車票，如購買往返程車票，需分開兩張訂單購買。</div>`);}
+function pdpa(){go(`<h2>收集個人資料聲明</h2>
+ <div class="box">閣下所提供的個人資料只用於處理購票及乘車相關用途。證件資料將於掃瞄登記後加密處理，並只保留至列車開出後30天。</div>
+ <button class="btn" onclick="step1()">接受</button><button class="btn gray" onclick="home()">取消</button>`);}
+function step1(){S.dir=S.dir||'out';S.date=S.date||fmt(new Date());S.to=S.to||'福田';S.frm=S.frm||'深圳北';
+ const days=[...Array(15)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()+i);return fmt(d);});
+ go(`<h2>步驟一：選擇車站及日期</h2>
+ <div class="box"><b>方向：</b>
+  <button class="btn ${S.dir=='out'?'sel':'gray'}" style="display:inline-block;width:45%" onclick="S.dir='out';step1()">前往內地</button>
+  <button class="btn ${S.dir=='in'?'sel':'gray'}" style="display:inline-block;width:45%" onclick="S.dir='in';step1()">由內地出發</button>
+  <p>出發站：<b>${S.dir=='out'?'香港西九龍（預設）':S.frm}</b>　到達站：<b>${S.dir=='out'?S.to:'香港西九龍'}</b></p>
+  <div class="grid">${STATIONS.filter(s=>s!='香港西九龍').map(s=>`<button class="btn ${((S.dir=='out'&&S.to==s)||(S.dir=='in'&&S.frm==s))?'sel':'gray'}" onclick="S.dir=='out'?S.to='${s}':S.frm='${s}';step1()">${s}</button>`).join('')}</div></div>
+ <div class="box"><b>出發日期（15天內）：</b>
+  <div class="grid">${days.map(d=>`<button class="btn ${S.date==d?'sel':'gray'}" onclick="S.date='${d}';step1()">${d.slice(5)}</button>`).join('')}</div></div>
+ <div class="note">注意：截止售票時間為開車前45分鐘。請預留足夠時間辦理乘車程序及出入境手續。</div>
+ <button class="btn" onclick="step2()">搜尋</button>`);}
+function step2(){S.trains=genTrains(S.date,S.dir=='out'?'香港西九龍':S.frm,S.dir=='out'?S.to:'香港西九龍');
+ S.page=S.page||0;S.cls=S.cls||'二等座';S.qty=S.qty||1;
+ if(!S.trains.length){go(`<h2>步驟二：選擇車次</h2><div class="note">該日沒有可售票車次（已扣除開車前45分鐘限制）。</div><button class="btn gray" onclick="step1()">返回</button>`);return;}
+ const pp=3,pages=Math.ceil(S.trains.length/pp),list=S.trains.slice(S.page*pp,S.page*pp+pp);
+ go(`<h2>步驟二：選擇車次</h2>
+ <div class="small">第 ${S.page+1}/${pages} 頁 <button onclick="S.page=Math.max(0,S.page-1);step2()">‹</button> <button onclick="S.page=Math.min(${pages-1},S.page+1);step2()">›</button></div>
+ ${list.map((t,i)=>`<div class="row ${S.sel==S.page*pp+i?'sel':''}" onclick="S.sel=${S.page*pp+i};step2()"><span><b>${t.train_no}</b>　${t.dep_time} → ${t.arr_time}</span><span>二等 HKD ${t.fares['二等座']}</span></div>`).join('')}
+ ${S.sel!=null?`<div class="box"><b>車廂等級：</b>
+  ${Object.keys(CLASSES).map(c=>`<button class="btn ${S.cls==c?'sel':'gray'}" style="display:inline-block;width:30%" onclick="S.cls='${c}';step2()">${c} HKD ${S.trains[S.sel].fares[c]}</button>`).join('')}
+  <p><b>車票數量：</b><span class="stepper"><button onclick="S.qty=Math.max(1,S.qty-1);step2()">−</button>${S.qty}<button onclick="S.qty=Math.min(9,S.qty+1);step2()">＋</button></span></p>
+  <div class="tip">提提你：小童票只適用於年滿6歲且未滿14歲的旅客。</div>
+  <button class="btn" onclick="S.pax=[];S.pi=0;step3()">下一步</button></div>`:''}`);}
+function step3(){if(S.pi>=S.qty){S.kids=S.kids||[];step4();return;}
+ if(!S.paxType){go(`<h2>步驟三：登記證件（乘車人 ${S.pi+1}/${S.qty}）</h2><p>選擇證件類別：</p>
+  ${ID_TYPES.map(t=>`<button class="btn gray" onclick="S.paxType='${t}';step3()">${t}</button>`).join('')}`);return;}
+ scan(`請將證件放在售票機指定位置進行掃瞄及登記（乘車人 ${S.pi+1}/${S.qty}）`,no=>{S.pax.push({id_type:S.paxType,id_no:no});S.paxType=null;S.pi++;step3();});}
+function scan(txt,cb){go(`<h2>登記證件</h2><div class="scan"></div><p style="text-align:center;font-size:24px">${txt}</p><p class="small" style="text-align:center">（模擬掃瞄中…）</p>`);setTimeout(()=>cb(genId(S.paxType||S.kidType)),2500);}
+function step4(){go(`<h2>步驟四：登記免費乘車小童</h2>
+ <div class="tip">提提你：未滿6歲且不佔座位的小童可免費乘車，該小童證件資料需與成人票連結。每位18歲或以上的旅客只可登記一位免費乘車小童。</div>
+ <p>已登記小童：${S.kids.length} 位</p>
+ <button class="btn" ${S.kids.length>=S.qty?'disabled':''} onclick="kidSel()">添加免費乘車兒童</button>
+ <button class="btn gray" onclick="step5()">下一步</button>`);}
+function kidSel(){go(`<h2>步驟四：登記免費乘車小童</h2>${ID_TYPES.map(t=>`<button class="btn gray" onclick="S.kidType='${t}';scan2()">${t}</button>`).join('')}`);}
+function scan2(){scan('請跟隨指示掃瞄小童的證件',no=>{S.kids.push({id_type:S.kidType,id_no:no});S.kidType=null;step4();});}
+function step5(){const t=S.trains[S.sel];S.unit=t.fares[S.cls];S.total=S.unit*S.qty;
+ S.from=S.dir=='out'?'香港西九龍':S.frm;S.to2=S.dir=='out'?S.to:'香港西九龍';
+ go(`<h2>步驟五：付款</h2>
+ <div class="box">${S.date}　${t.train_no}　${S.from} → ${S.to2}<br>${S.cls} × ${S.qty}　小童 ${S.kids.length} 位<br><b style="font-size:32px">總額 HKD ${S.total}</b></div>
+ <p>核對車票資料後，按【付款】並閱讀並同意相關規則。</p>
+ <button class="btn red" onclick="rules()">付款</button>`);}
+function rules(){go(`<h2>相關規則</h2><div class="box">車票一经售出不可退改。乘車須攜帶登記時之有效身份證明文件正本。截止售票時間為開車前45分鐘。</div>
+ <button class="btn" onclick="paySel()">閱讀並同意</button><button class="btn gray" onclick="step5()">返回</button>`);}
+function paySel(){go(`<h2>步驟五：付款</h2>
+ <div class="tip">提提你：售票機接受感應式信用卡（上限港幣1,000元）及其他流動支付方式（如支付寶及微信支付）。</div>
+ ${PAY.map(m=>`<button class="btn gray" ${(m=='感應式信用卡'&&S.total>1000)?'disabled':''} onclick="paying('${m}')">${m}${(m=='感應式信用卡'&&S.total>1000)?'（超過上限港幣1,000元）':''}</button>`).join('')}`);}
+function paying(m){S.pay=m;go(`<h2>付款中</h2><div class="scan"></div><p style="text-align:center;font-size:24px">${m=='感應式信用卡'?'請將信用卡放在指定讀卡器':'請以'+m+'掃瞄螢幕 QR Code'}（模擬）</p>`);setTimeout(done,2500);}
+function done(){const t=S.trains[S.sel];
+ const o={id:Date.now(),no:'',created_at:new Date().toLocaleString('zh-HK'),travel_date:S.date,
+  from_station:S.from,to_station:S.to2,train_no:t.train_no,dep_time:t.dep_time,arr_time:t.arr_time,
+  dep_dt:t.dep_dt,coach_class:S.cls,qty:S.qty,unit_price:S.unit,total:S.total,payment_method:S.pay,
+  passengers:S.pax,free_children:S.kids,slipPrints:0,receiptPrinted:false};
+ o.no='WK'+S.date.replace(/-/g,'')+String(o.id).slice(-4);
+ saveO(o);purchasePrints(o);S.oid=o.id;
+ go(`<h2>步驟六：領取「行程信息提示」</h2>
+ <div class="scan"></div><p style="text-align:center;font-size:24px">系統已自動列印「行程信息提示」及收據</p>
+ <div class="note">注意：「行程信息提示」只供參考，不能憑此乘車。在列車開出前可重複領取，而於車站售票機只限印發兩次。</div>
+ <div class="tip">購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>
+ <button class="btn gray" onclick="home()">完成</button>`);}
+function recollect(){const a=getO().slice().reverse().slice(0,8);
+ go(`<h2>補領「行程信息提示」</h2>
+ <div class="note">在列車開出前可重複領取，而於車站售票機只限印發兩次。補領只印提示，不會印收據。</div>
+ ${a.map(o=>{const ok=o.slipPrints<2&&new Date(o.dep_dt)>new Date();
+  return `<button class="btn gray" ${ok?'':'disabled'} onclick="reprint(${o.id})">${o.no}　${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`}).join('')||'<p>沒有訂單</p>'}
+ <button class="btn gray" onclick="home()">返回</button>`);}
+function reprint(id){const o=getO().find(x=>x.id===id);doPrint(slipHTML(o));o.slipPrints++;saveO(o);recollect();}
+function childFlow(){const os=getO().slice().reverse().slice(0,8);
+ if(!S.cf){go(`<h2>額外方法添加免費乘車小童</h2><p>在主頁按【免費乘車兒童】，再按【添加】。</p>
+  <button class="btn" onclick="S.cf=1;childFlow()">添加</button><button class="btn gray" onclick="home()">返回</button>`);return;}
+ if(!S.cfOrder){go(`<h2>步驟一：選擇同行成人車票</h2>
+  ${os.map(o=>`<button class="btn gray" onclick="S.cfOrder=${o.id};S.paxType=null;S.cfScan1=0;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}`);return;}
+ if(!S.paxType){go(`<h2>步驟一：選擇同行成人車票</h2><p>選擇同行成人購票時的證件類別，將證件放在指定位置掃瞄：</p>
+  ${ID_TYPES.map(t=>`<button class="btn gray" onclick="S.paxType='${t}';childFlow()">${t}</button>`).join('')}`);return;}
+ if(!S.cfScan1){go(`<h2>掃瞄成人證件</h2><div class="scan"></div>`);setTimeout(()=>{S.cfScan1=1;S.paxType=null;childFlow();},2500);return;}
+ if(!S.kidType){go(`<h2>步驟二：登記同行小童證件</h2><p>選擇同行小童的登記證件類別，並按指示掃瞄小童證件：</p>
+  ${ID_TYPES.map(t=>`<button class="btn gray" onclick="S.kidType='${t}';childFlow()">${t}</button>`).join('')}`);return;}
+ go(`<h2>掃瞄小童證件</h2><div class="scan"></div>`);setTimeout(()=>{const o=getO().find(x=>x.id===S.cfOrder);
+  if(o.free_children.length>=o.qty){go(`<div class="note">每位18歲或以上的旅客只可登記一位免費乘車小童</div><button class="btn gray" onclick="home()">返回</button>`);return;}
+  o.free_children.push({id_type:S.kidType,id_no:genId(S.kidType)});saveO(o);
+  go(`<h2>步驟三：完成添加</h2><p style="font-size:26px">完成程序後請取回證件。</p><button class="btn" onclick="home()">確定</button>`);},2500);}
+home();
+</script>
+</body>
+</html>
