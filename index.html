@@ -42,6 +42,7 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .btn{background:#5886C5;color:#fff;border:none;border-radius:8px;padding:14px 34px;font-size:22px;cursor:pointer}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.orange{background:#FBAC1B}
+.btn.mini{padding:8px 18px;font-size:18px}
 .trow{display:flex;align-items:center;gap:16px;border:2px solid #8FB2DE;border-radius:6px;padding:12px;margin:10px 14px;cursor:pointer;font-size:19px;background:#fff}
 .trow.sel{border-color:#f08c1e;background:#fff7ee}
 .trow .ar{color:#5886C5;font-size:13px;text-align:center}
@@ -62,7 +63,7 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 .idb img{display:block;margin:0 auto 10px}
 .suml{border:2px solid #8FB2DE;border-radius:6px;padding:16px;background:#fff;font-size:20px}
 .pbox{border:2px solid #8FB2DE;border-radius:6px;padding:10px 18px;background:#fff;font-size:20px;margin:10px 0;text-align:right}
-#printArea{display:none}
+#printArea{display:none;line-height:0}
 #printArea img{display:block;margin:0 auto}
 @media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}@page{size:80mm 210mm;margin:0}}
 </style>
@@ -75,7 +76,7 @@ html,body{height:100%;overflow:hidden;background:#e8edf3}
 </div></div>
 <div id="printArea"></div>
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);document.getElementById('stage').style.transform='scale('+s+')';}
 window.onresize=fit;fit();
 document.addEventListener('error',function(e){if(e.target&&e.target.tagName=='IMG'&&e.target.closest('#app'))e.target.style.display='none';},true);
@@ -180,11 +181,12 @@ const getO=()=>JSON.parse(localStorage.getItem('wk_orders')||'[]');
 const setO=a=>localStorage.setItem('wk_orders',JSON.stringify(a));
 function saveO(o){const a=getO(),i=a.findIndex(x=>x.id===o.id);if(i>=0)a[i]=o;else a.push(o);setO(a);}
 const doPrint=h=>{document.getElementById('printArea').innerHTML=h;window.print();};
-/* ===== PDF 原排版列印（300 DPI 渲染、按原始物理尺寸輸出） ===== */
+/* ===== PDF 原排版列印：先解碼圖片再列印（修復空白） ===== */
 async function pdfPrint(path){
+ if(typeof pdfjsLib==='undefined')throw new Error('pdfjs missing');
  const buf=await (await fetch(path)).arrayBuffer();
  const doc=await pdfjsLib.getDocument({data:buf}).promise;
- let html='';
+ const pa=document.getElementById('printArea');pa.innerHTML='';
  for(let i=1;i<=doc.numPages;i++){
   const page=await doc.getPage(i);
   const vp1=page.getViewport({scale:1});
@@ -192,9 +194,13 @@ async function pdfPrint(path){
   const vp=page.getViewport({scale:300/72});
   const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
   await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-  html+=`<img src="${cv.toDataURL('image/png')}" style="width:${mmW}mm;height:${mmH}mm">`;
+  const img=new Image();
+  img.src=cv.toDataURL('image/png');
+  img.style.cssText='display:block;margin:0 auto;width:'+mmW+'mm;height:'+mmH+'mm';
+  await new Promise(res=>{if(img.complete&&img.naturalWidth)return res();img.onload=res;img.onerror=res;});
+  pa.appendChild(img);
  }
- doPrint(html);}
+ window.print();}
 const SLIP_FIXED=`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.5"><b style="font-size:15px">香港西九龍站 高速鐵路<br>「行程信息提示」</b><hr>訂單編號：WK202610110001<br>乘車日期：2026-10-11<br>車　　次：G5818<br>出發站：香港西九龍　11:24<br>到達站：福田　11:38<br>車廂等級：二等座<br>車票數量：1 張<br>總　　額：HKD 79<hr><b>注意：「行程信息提示」只供參考，不能憑此乘車。<br>在列車開出前可重複領取，而於車站售票機只限印發兩次。</b></div>`;
 const RECEIPT_FIXED=`<div style="width:72mm;margin:0 auto;font-size:12px;line-height:1.6"><b style="font-size:15px">香港西九龍站 高速鐵路<br>收據</b><hr>茲收到購票款項。<br>金額：HKD 100.00<br>付款方式：模擬付款<hr>此收據只供演示用途。<br>購票收據只能在購買該車票的售票機領取，完成交易後不能再次列印。</div>`;
 async function slipPrintRaw(){try{await pdfPrint('ticket_slip.pdf');}catch(e){doPrint(SLIP_FIXED);}}
@@ -238,7 +244,7 @@ function s1(){S.step=1;S.dir=S.dir||'out';S.main=S.main||'福田';S.field=S.fiel
   <div class="lb">出發站</div><div class="fbox ${S.field=='from'?'sel':''}" onclick="S.field='from';s1()">${dep}<small>&nbsp;</small></div>
   <div class="lb">到達站</div><div class="fbox ${S.field=='to'?'sel':''}" onclick="S.field='to';s1()">${arr}<small>&nbsp;</small></div>
   <div class="lb">出發日期</div><div class="fbox ${S.field=='date'?'sel':''}" onclick="S.field='date';pickDate()">${S.date}</div>
-  <div style="margin-top:60px"><button class="btn" style="width:100%" onclick="S.cw=null;S.sel=null;s2()">下一步</button></div>
+  <div style="margin-top:60px"><button class="btn" style="width:100%" onclick="S.cw=null;S.sel=null;S.tp=0;s2()">下一步</button></div>
  </div>`);}
 function pickSt(s){
  if(S.field=='from'){if(s=='香港西九龍'){S.dir='out';}else{S.main=s;S.dir='in';}}
@@ -247,23 +253,36 @@ function pickSt(s){
 function pickDate(){S.step='date';setBar(bb('back'));
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px"><p style="margin:20px;font-size:22px">選擇15天內出發的日子：</p>
  <div class="sgrid" style="padding-top:10px">${day15().map(d=>`<div class="st ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';s1()">${fmt(d).slice(5).replace('-','/')}</div>`).join('')}</div></div>`);}
+/* ===== 步驟二：車次分頁（每頁5班）＋日期分頁 獨立控制 ===== */
 function s2(){S.step=2;
  if(S.cw==null||S.cw===undefined){const i=dayIdx(S.date);S.cw=Math.min(11,Math.max(0,Math.floor(i/4)*4));}
  if(S.cw<0)S.cw=0;if(S.cw>11)S.cw=11;
- S.trains=trainsFor(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');setBar(bb('back'));
+ S.trains=trainsFor(S.date,S.dir=='out'?'香港西九龍':S.main,S.dir=='out'?S.main:'香港西九龍');
+ const per=5,tpages=Math.max(1,Math.ceil(S.trains.length/per));
+ if(S.tp==null||S.tp===undefined)S.tp=0;
+ if(S.tp>tpages-1)S.tp=tpages-1;if(S.tp<0)S.tp=0;
+ const rows=S.trains.slice(S.tp*per,S.tp*per+per);
+ setBar(bb('back'));
  const chips=day15().slice(S.cw,S.cw+4);
  go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px">
-  ${S.trains.map((t,i)=>`<div class="trow ${S.sel==i?'sel':''}" onclick="S.sel=${i};s2b()">
+  <div style="position:absolute;top:14px;right:20px;display:flex;gap:12px;align-items:center;z-index:5">
+   <button class="btn mini" ${S.tp<=0?'disabled':''} onclick="S.tp--;s2()">車次上一頁</button>
+   <span style="font-size:19px;color:#5886C5;font-weight:bold">車次 ${S.trains.length?S.tp+1:0}/${tpages}</span>
+   <button class="btn mini" ${S.tp>=tpages-1?'disabled':''} onclick="S.tp++;s2()">車次下一頁</button>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:70px;bottom:110px;overflow:hidden">
+  ${rows.map((t,i)=>`<div class="trow ${S.sel==S.tp*per+i?'sel':''}" onclick="S.sel=${S.tp*per+i};s2b()">
    <b style="width:110px">${t.no}</b>
    <span style="width:150px">${S.dir=='out'?'香港西九龍':S.main}<br>${t.dep}</span>
    <span class="ar">⟶<br>${t.dur}分鐘</span>
    <span style="width:120px">${S.dir=='out'?S.main:'香港西九龍'}<br>${t.arr}</span>
    <span style="flex:1;text-align:center">一等座<br>${fareFor(S.main,'一等座',false).toFixed(2)}</span>
    <span style="flex:1;text-align:center">二等座<br>${fareFor(S.main,'二等座',false).toFixed(2)}</span></div>`).join('')||'<p style="padding:30px">該日沒有可選的車次</p>'}
-  <div style="text-align:center;margin-top:16px">
-  <button class="btn" style="padding:10px 26px" ${S.cw<=0?'disabled':''} onclick="S.cw=Math.max(0,S.cw-4);s2()">上一頁</button>
-  ${chips.map((d,i)=>`<span class="chip ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';S.sel=null;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
-  <button class="btn" style="padding:10px 26px" ${S.cw+4>=15?'disabled':''} onclick="S.cw=Math.min(11,S.cw+4);s2()">下一頁</button></div></div>`);}
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:20px;text-align:center">
+  <button class="btn mini" ${S.cw<=0?'disabled':''} onclick="S.cw=Math.max(0,S.cw-4);S.sel=null;S.tp=0;s2()">日期上一頁</button>
+  ${chips.map((d,i)=>`<span class="chip ${S.date==fmt(d)?'sel':''}" onclick="S.date='${fmt(d)}';S.sel=null;S.tp=0;s2()">${fmt(d).slice(5).replace('-','/')}<b>${S.cw+i+1}</b></span>`).join('')}
+  <button class="btn mini" ${S.cw+4>=15?'disabled':''} onclick="S.cw=Math.min(11,S.cw+4);S.sel=null;S.tp=0;s2()">日期下一頁</button></div></div>`);}
 function s2b(){S.step=3;S.cls=S.cls||'二等座';S.adult=S.adult||1;S.child=S.child||0;setBar(bb('back'));
  const t=S.trains[S.sel],biz=hasBiz(t.no);
  if(S.cls=='商務座'&&!biz)S.cls='二等座';
