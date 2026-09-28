@@ -671,7 +671,15 @@ async function printing(){const t=S.trains[S.sel],T=totals();
  await showNoticeModal("請取走票據和證件", 1000);
  home();}
 
+<!-- 在 childFlow 函數中已包含證件類型選擇，現將 recollect 功能統一化 -->
+
 function startRecollectScan(){
+    setBar(bb('cancel'));
+    // 先顯示證件類型選擇，而非直接掃描
+    go(`<div class="modal"><div class="mbox"><p style="text-align:center;font-size:22px">請選擇證件</p><div class="idg">${IDS.map(t=>`<button class="idb" onclick="S.recollectType='${t}';startRecollectScan2()"><img src="${getIdIcon(t)}">${t}</button>`).join('')}</div></div></div>`);
+}
+
+function startRecollectScan2(){
     setBar(bb('cancel'));
     go(`<div class="modal"><div class="mbox"><p style="font-size:24px;margin-bottom:24px">請於相關閱讀器掃瞄證件</p><div style="text-align:center"><button class="btn" onclick="home()">取消</button></div></div></div>`);
     setTimeout(async function(){
@@ -681,6 +689,7 @@ function startRecollectScan(){
     }, 2500);
 }
 
+// 修改 showRecollectList 函數，確保正確使用選擇的證件類型
 function showRecollectList(){
     setBar(bb('back'));
     const a=getO().slice().reverse().slice(0,8);
@@ -689,10 +698,8 @@ function showRecollectList(){
     const ids=Object.keys(S.pick||{}).filter(k=>S.pick[k]);
     go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:10px;font-size:22px">請選擇要領取的訂單</p>${validOrders.map(o=>{const ok=o.slipPrints<2;const on=!!S.pick[o.id];return `<button class="btn" style="display:block;width:100%;margin:10px 0;${on?'background:#f08c1e':''}" ${ok?'':'disabled'} onclick="togPick(${o.id})">${on?'✔ ':''}${o.no} ${o.travel_date} ${o.train_no}（已印 ${o.slipPrints}/2）</button>`;}).join('')||'<p style="margin:14px">沒有可領取的訂單</p>'}${ids.length?`<button class="btn orange" style="margin-top:16px" onclick="startQueue()">確認列印（${ids.length}張）</button>`:''}</div>`);
 }
-function recollect(){ showRecollectList(); }
-function togPick(id){S.pick[id]=!S.pick[id];showRecollectList();}
-async function startQueue(){const ids=Object.keys(S.pick).filter(k=>S.pick[k]).map(Number);S.pick={};for(let i=0;i<ids.length;i++){const o=getO().find(x=>x.id===ids[i]);if(!o)continue;go(printModalHTML(ids.length,i+1,ids.length-i-1));await slipPrintRaw();o.slipPrints++;saveO(o);await wait(4000);}await showNoticeModal("請取走票據", 1000);showRecollectList();}
 
+// 修改 childFlow 函數中的證件掃描部分，保持一致性
 function childFlow(){const os=getO().slice().reverse().slice(0,8);setBar(bb('back'));
  if(!S.cf){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">無論於任何購票途徑購票時，如未有登記同行免費乘車小童，亦可於售票機後補登記手續</p><button class="btn" onclick="S.cf=1;childFlow()">添加</button></div>`);return;}
  if(!S.cfOrder){go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:20px"><p style="margin:16px;font-size:22px">步驟一：選擇同行成人車票</p>${os.map(o=>`<button class="btn" style="display:block;width:100%;margin:10px 0" onclick="S.cfOrder=${o.id};S.paxType=null;S.cfScan1=0;S.cfScan2=0;S.kidType=null;childFlow()">${o.no} ${o.travel_date} ${o.train_no} ×${o.qty}</button>`).join('')||'<p>沒有訂單</p>'}</div>`);return;}
