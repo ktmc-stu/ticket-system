@@ -130,7 +130,7 @@ const FARE={
 '汕頭':[377,605,681,832,1280, 189,303,545,665,1025],
 '潮汕':[319,511,576,null,1076, 160,256,256,460,860],
 '梅州西':[317,508,574,null,1070, 158,254,459,null,856],
-'長沙南':[685,1096,1233,1507,2121, 342,548,548,986,1205,1697],
+'長沙南':[685,1096,1233,1507,2121, 342,548,548,986,1205],
 '武漢':[888,1421,1598,1953,2760, 444,711,1279,1562,2209],
 '北京西':[1443,2119,2383,null,4093, 722,1059,1059,1907,null,3274],
 '石家莊':[1337,2000,2080,null,3893, 668,1000,1664,null,3114],
@@ -140,12 +140,12 @@ const FARE={
 '南京南':[1123,1796,2020,2470,3708, 562,899,1617,1976,2966],
 '杭州西':[954,1525,1717,null,3124, 478,763,763,1374,null,2499],
 '上饒':[800,1280,1440,null,2400, 400,640,720,null,1200],
-'成都東':[1019,1631,1835,2242,3096, 510,815,815,1469,1794,2477],
+'成都東':[1019,1631,1835,2242,3096, 510,815,815,1469,1794],
 '重慶西':[862,1376,1551,null,2810, 431,688,688,1241,null,2248],
 '福州':[587,939,1058,null,2015, 294,470,470,847,null,1612],
 '廈門':[431,689,777,null,1468, 216,345,622,null,1174],
 '西安北':[1188,1901,2139,null,3716, 594,951,1712,null,2972],
-'昆明南':[1037,1660,1895,2283,3509, 519,830,830,1516,1826,2807],
+'昆明南':[1037,1660,1895,2283,3509, 519,830,830,1516,1826],
 '南寧東':[538,860,968,null,1606, 269,430,775,null,1285],
 '湛江西':[549,865,982,1204,1642, 275,433,785,963,1314],
 '張家界西':[873,1395,1570,1917,2735, 437,697,1256,1533,2188],
@@ -179,12 +179,11 @@ const SLEEPER_FARES_RMB = {
 function fareFor(st,cls,child,special,trainNo){
     if (trainNo && SLEEPER_FARES_RMB[trainNo] && SLEEPER_FARES_RMB[trainNo][st]) {
         const prices = SLEEPER_FARES_RMB[trainNo][st];
-        const idx = CLASS_IDX[cls];
-        if (idx === undefined) return null;
         let rmbPrice = 0;
         if (cls === '二等座') rmbPrice = prices[0];
-        else if (cls === '特等座') rmbPrice = prices[1];
-        else if (cls === '動臥') rmbPrice = prices[3];
+        else if (cls === '動臥') rmbPrice = prices[1];
+        else if (cls === '特等座' || cls === '一等座') rmbPrice = prices[2];
+        else if (cls === '商務座' || cls === '優選一等座') rmbPrice = prices[3];
         else return null;
         if (!rmbPrice) return null;
         let hkd = Math.round(rmbPrice * 1.1);
@@ -284,7 +283,7 @@ const TT=[
 {n:'G6566',t:{'香港西九龍':'7:41','深圳北':'7:59','東莞南':'8:20','東莞':'8:41','廣州新塘':'8:56','廣州東':'9:13'}},
 {n:'G5822',t:{'香港西九龍':'8:12','福田':'8:26'}},
 {n:'G5626',t:{'香港西九龍':'8:17','深圳北':'8:35'}},
-{n:'G6582',t:{'香港西九龍':'8:22','深圳北':'8:40','廣州南':'9:04'}},
+{n:'G6582',t:{'香港西九龍':'8:22','深圳北':'8:40','南沙北':'9:04','廣州南':'9:19'}},
 {n:'G6552',t:{'香港西九龍':'8:30','福田':'8:44','深圳北':'8:56','光明城':'9:12','廣州東':'10:08'}},
 {n:'G5638',t:{'香港西九龍':'8:56','深圳北':'9:16'}},
 {n:'G6510',t:{'香港西九龍':'9:08','福田':'9:22','深圳北':'9:32'}},
@@ -446,11 +445,10 @@ initCal();
 
 function trainsFor(date,frm,to){
   const now=new Date();now.setHours(0,0,0,0);
+  const realNow=new Date();
   const out=[];
   TT.forEach(x=>{
     if(!x.t[frm]||!x.t[to])return;
-    
-    // 方向判斷：出發站時間必須早於到達站時間
     let a=tm(x.t[frm]),b=tm(x.t[to]);
     if(!x.sleeper && b < a) return;
     
@@ -467,8 +465,9 @@ function trainsFor(date,frm,to){
     if(b<=a)return;
     const parts=date.split('-');
     const dep=new Date(parts[0],parts[1]-1,parts[2]);
-    dep.setMinutes(a);
-    if(dep.toDateString()===now.toDateString()&&(dep-now)<45*60000)return;
+    dep.setHours(Math.floor(a/60), a%60, 0, 0);
+    
+    if(dep.toDateString()===realNow.toDateString()&&(dep-realNow)<45*60000)return;
     out.push({no:x.n,dep:x.t[frm],arr:x.t[to],dur:b-a,dt:dep.toISOString(),special:!!x.special,sleeper:!!x.sleeper});
   });
   out.sort((p,q)=>tm(p.dep)-tm(q.dep));
@@ -526,9 +525,6 @@ function pickDate(){
 function renderCalendar(){
   const now=new Date();now.setHours(0,0,0,0);
   const maxD=new Date(now.getTime()+14*86400000);
-  const startMonth=now.getMonth();
-  const endMonth=maxD.getMonth();
-  const crossMonth=startMonth!==endMonth;
   
   const year=calYear;
   const month=calMonth;
@@ -536,6 +532,9 @@ function renderCalendar(){
   const lastDay=new Date(year,month+1,0);
   const daysInMonth=lastDay.getDate();
   const startWeekday=firstDay.getDay();
+  
+  const canPrev = (calYear > now.getFullYear() || (calYear === now.getFullYear() && calMonth > now.getMonth()));
+  const canNext = (calYear < maxD.getFullYear() || (calYear === maxD.getFullYear() && calMonth < maxD.getMonth()));
   
   const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   const weekDays=['日','一','二','三','四','五','六'];
@@ -557,11 +556,11 @@ function renderCalendar(){
     daysHTML+=`<div class="cal-day ${cls}" ${onclick}>${d}${sel?'<small>✓</small>':''}</div>`;
   }
   
-  const navHTML=crossMonth?`
+  const navHTML=`
     <div class="cal-nav">
-      <button class="btn mini" onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar()">◀ 上月</button>
-      <button class="btn mini" onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar()">下月 ▶</button>
-    </div>`:'';
+      <button class="btn mini" ${canPrev?'':'disabled'} onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar()">◀ 上月</button>
+      <button class="btn mini" ${canNext?'':'disabled'} onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar()">下月 ▶</button>
+    </div>`;
   
   go(`<div class="panel" style="left:30px;top:40px;right:30px;height:780px;padding:30px">
     <div class="cal-header">
@@ -594,7 +593,7 @@ function s2(){S.step=2;
   <div style="position:absolute;left:0;right:0;top:70px;bottom:110px;overflow:hidden">
   ${rows.map((t,i)=>{
    const avail=getAvailClasses(t);
-   const classCols=avail.map(c=>`<span style="flex:1;text-align:center"><span class="class-name">${c.replace('座','')}</span><br><span class="class-price">${fareFor(S.main,c,false,t.special,t.no).toFixed(2)}</span></span>`).join('');
+   const classCols=avail.map(c=>`<span style="flex:1;text-align:center"><span class="class-name">${c.replace('座','').replace('臥','')}</span><br><span class="class-price">${fareFor(S.main,c,false,t.special,t.no).toFixed(2)}</span></span>`).join('');
    return `<div class="trow ${S.sel==S.tp*per+i?'sel':''}" onclick="S.sel=${S.tp*per+i};s2b()">
     <span class="train-no" style="width:90px">${t.no}</span>
     <span style="width:140px"><span class="station-name">${S.dir=='out'?'香港西九龍':S.main}</span><br><span class="train-time">${t.dep}</span></span>
@@ -628,7 +627,9 @@ function totals(){const t=S.trains[S.sel];const u=fareFor(S.main,S.cls,false,t.s
 function sumBase(){const t=S.trains[S.sel],T=totals();
  return `<div style="position:absolute;left:60px;top:30px;display:flex;align-items:center;gap:30px;font-size:28px">
    <b>${S.dir=='out'?'香港西九龍':S.main}</b>
-   <span style="text-align:center;font-size:18px">${t.no}<br>${S.date} ${t.dep}</span><b>${S.dir=='out'?S.main:'香港西九龍'}</b></div>
+   <span style="text-align:center;font-size:18px">${t.no}<br>${S.date} ${t.dep}</span>
+   <span style="text-align:center;font-size:28px;color:#5886C5">⟶</span>
+   <b>${S.dir=='out'?S.main:'香港西九龍'}</b></div>
   <div class="suml" style="position:absolute;left:60px;top:140px;width:900px;height:300px">成人票 ${S.cls} ×${S.adult}${S.child?'<br>小童票 '+S.cls+' ×'+S.child:''}${(S.kids&&S.kids.length)?'<br>免費乘車小童 ×'+S.kids.length:''}</div>
   <div class="rcol" style="right:60px;top:30px;width:340px">
    <div class="lb">車票總價</div><div class="pbox">HK$ ${T.total.toFixed(2)}</div>
